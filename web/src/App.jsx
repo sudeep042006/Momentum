@@ -4,6 +4,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import PlaceholderPage from './pages/PlaceholderPage';
+import Tasks from './pages/Tasks';
+import Today from './pages/Today';
 
 function App() {
   return (
@@ -15,9 +17,9 @@ function App() {
         
         {/* Dashboard Routes */}
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/dashboard/today" element={<PlaceholderPage title="Today's Tasks" />} />
+        <Route path="/dashboard/today" element={<Today />} />
         <Route path="/dashboard/calendar" element={<PlaceholderPage title="Calendar" />} />
-        <Route path="/dashboard/tasks" element={<PlaceholderPage title="All Tasks" />} />
+        <Route path="/dashboard/tasks" element={<Tasks />} />
         <Route path="/dashboard/schedule" element={<PlaceholderPage title="Schedule" />} />
         <Route path="/dashboard/journal" element={<PlaceholderPage title="Journal" />} />
         <Route path="/dashboard/analytics" element={<PlaceholderPage title="Analytics & Progress" />} />

@@ -9,6 +9,10 @@ const DailyListSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    totalTasks: {
+        type: Number,
+        default: 0
+    },
     tasksCompleted: {
         type: Number,
         default: 0
