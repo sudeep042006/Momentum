@@ -13,7 +13,7 @@ export default function Login() {
     e.preventDefault();
     try {
       const response = await login(email, password);
-      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('token', response.data.data.session.access_token);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');

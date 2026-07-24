@@ -14,7 +14,7 @@ export default function Register() {
     e.preventDefault();
     try {
       const response = await register({ name, email, password });
-      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('token', response.data.data.session.access_token);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
