@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import Header from '../components/layout/Header';
 import { getTasks, createTask, updateTask, deleteTask } from '../services/task.api';
-import { CheckCircle2, Circle, Trash2, Plus, Flag, Folder } from 'lucide-react';
+import { CheckCircle2, Circle, Trash2, Plus, Flag, Clock } from 'lucide-react';
 
 const PRIORITY_COLORS = {
   high: 'text-red-400 border-red-400/30 bg-red-400/10',
@@ -79,6 +80,14 @@ export default function Tasks() {
   // Group tasks for visual clarity
   const pendingTasks = tasks.filter(t => t.status === 'pending');
   const completedTasks = tasks.filter(t => t.status === 'completed');
+
+  // Find yesterday's (or most recent previous day's) tasks for the sidebar
+  const todayStr = new Date().toISOString().split('T')[0];
+  const uniqueDates = [...new Set(tasks.map(t => t.date))].sort((a, b) => new Date(b) - new Date(a));
+  const previousDates = uniqueDates.filter(d => d !== todayStr);
+  const recentDateStr = previousDates.length > 0 ? previousDates[0] : null;
+  
+  const recentHistoryTasks = recentDateStr ? tasks.filter(t => t.date === recentDateStr) : [];
 
   return (
     <DashboardLayout>
@@ -180,83 +189,51 @@ export default function Tasks() {
             )}
           </div>
 
-          {/* Right Side: Pomodoro & Analytics (1 col) */}
+          {/* Right Side: Recent History (1 col) */}
           <div className="flex flex-col gap-6">
             
-            {/* Block 2: Hyper-Focus Pomodoro */}
-            <div className="bg-momentum-panel border border-momentum-border rounded-2xl p-6 flex flex-col relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-momentum-green-bright/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-              
-              <h2 className="text-xl font-bold text-white mb-2">Hyper-Focus</h2>
-              <p className="text-momentum-text-secondary text-sm mb-8">
-                {activeTask ? 'Lock in on your priority.' : 'Select a task to enter focus mode.'}
+            <div className="bg-momentum-panel border border-momentum-border rounded-2xl p-6 flex flex-col h-full">
+              <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                <Clock className="text-momentum-green-bright" size={24} />
+                Recent History
+              </h2>
+              <p className="text-momentum-text-secondary text-sm mb-6">
+                Your execution from the previous day.
               </p>
 
-              <div className="flex flex-col items-center justify-center flex-1 py-4">
-                {/* Circular Timer Visual */}
-                <div className={`relative w-48 h-48 rounded-full border-4 flex items-center justify-center mb-6 transition-all duration-500 shadow-2xl ${activeTask ? 'border-momentum-green-bright shadow-momentum-green-bright/20' : 'border-momentum-border shadow-black/40'}`}>
-                  {activeTask && (
-                    <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-l-transparent border-momentum-green-bright animate-spin opacity-30"></div>
-                  )}
-                  <span className={`text-4xl font-mono font-bold ${activeTask ? 'text-white' : 'text-momentum-text-secondary'}`}>
-                    25:00
-                  </span>
-                </div>
-
-                <div className="text-center w-full">
-                  <p className="text-sm font-medium text-momentum-text-secondary uppercase tracking-widest mb-2">Active Task</p>
-                  <p className={`font-medium truncate px-4 ${activeTask ? 'text-white text-lg' : 'text-momentum-border italic'}`}>
-                    {activeTask ? activeTask.title : 'None Selected'}
-                  </p>
-                </div>
-
-                <button 
-                  disabled={!activeTask}
-                  className={`mt-8 w-full py-3 rounded-xl font-bold transition-all uppercase tracking-wider text-sm
-                    ${activeTask 
-                      ? 'bg-momentum-green-bright text-black hover:bg-momentum-green-glow shadow-lg shadow-momentum-green-bright/20' 
-                      : 'bg-momentum-bg text-momentum-text-secondary border border-momentum-border cursor-not-allowed'
-                    }`}
-                >
-                  Start Session
-                </button>
+              <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 mb-6">
+                {recentHistoryTasks.length === 0 ? (
+                   <div className="text-center py-10 bg-momentum-bg rounded-xl border border-dashed border-momentum-border">
+                     <p className="text-momentum-text-secondary text-sm">No recent history available.</p>
+                   </div>
+                ) : (
+                  <div>
+                    <div className="mb-4">
+                       <span className="bg-momentum-green-bright/20 border border-momentum-green-bright/50 text-momentum-green-bright px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                         {new Date(recentDateStr).toDateString()}
+                       </span>
+                    </div>
+                    <div className="space-y-2">
+                      {recentHistoryTasks.map(task => (
+                        <div key={task._id} className="flex items-start gap-3 p-3 bg-[#0a2e15] border border-momentum-green-bright/30 rounded-xl">
+                          <CheckCircle2 size={18} className="text-momentum-green-bright shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-momentum-green-bright text-sm font-medium line-through opacity-80">{task.title}</p>
+                            <p className="text-xs text-momentum-green-bright/60 uppercase font-mono mt-1">{task.category || 'Work'}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* Block 3: Task Velocity */}
-            <div className="bg-momentum-panel border border-momentum-border rounded-2xl p-6">
-              <h2 className="text-xl font-bold text-white mb-1">Velocity</h2>
-              <p className="text-momentum-text-secondary text-sm mb-6">Your weekly execution rate.</p>
-
-              <div className="flex items-end gap-2 h-32 mt-4">
-                {/* Pseudo-chart for UI */}
-                <div className="flex-1 bg-momentum-bg rounded-t-sm h-[30%] relative group">
-                  <div className="absolute inset-0 bg-momentum-green-bright/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </div>
-                <div className="flex-1 bg-momentum-bg rounded-t-sm h-[40%] relative group">
-                  <div className="absolute inset-0 bg-momentum-green-bright/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </div>
-                <div className="flex-1 bg-momentum-bg rounded-t-sm h-[20%] relative group">
-                  <div className="absolute inset-0 bg-momentum-green-bright/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </div>
-                <div className="flex-1 bg-momentum-bg rounded-t-sm h-[60%] relative group">
-                  <div className="absolute inset-0 bg-momentum-green-bright/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </div>
-                <div className="flex-1 bg-momentum-bg rounded-t-sm h-[50%] relative group">
-                  <div className="absolute inset-0 bg-momentum-green-bright/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </div>
-                <div className="flex-1 bg-momentum-green-bright rounded-t-sm h-[80%] relative shadow-[0_0_15px_rgba(34,197,94,0.3)]">
-                  {/* Today */}
-                </div>
-              </div>
-              <div className="flex justify-between mt-2 text-xs text-momentum-text-secondary uppercase font-mono">
-                <span>Mon</span>
-                <span>Tue</span>
-                <span>Wed</span>
-                <span>Thu</span>
-                <span>Fri</span>
-                <span className="text-momentum-green-bright font-bold">Today</span>
-              </div>
+              <Link 
+                to="/dashboard/history"
+                className="w-full py-3 rounded-xl font-bold transition-all uppercase tracking-wider text-sm text-center bg-momentum-bg text-white border border-momentum-border hover:border-momentum-green-bright hover:text-momentum-green-bright block"
+              >
+                View Recent History
+              </Link>
             </div>
 
           </div>
