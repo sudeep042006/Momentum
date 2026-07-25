@@ -26,7 +26,7 @@ export default function Header() {
     return 'Good evening';
   };
 
-  const userName = user?.user_metadata?.name || 'User';
+  const userName = user?.name || user?.user_metadata?.name || 'User';
 
   const getPageTitle = () => {
     const path = location.pathname;
