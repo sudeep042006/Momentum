@@ -20,7 +20,7 @@ const NAV_ITEMS = [
   { name: 'Users', path: '/dashboard/users', icon: Activity },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useUser();
@@ -35,7 +35,7 @@ export default function Sidebar() {
   const initial = userName.charAt(0).toUpperCase();
 
   return (
-    <aside className="w-64 border-r border-momentum-border bg-momentum-bg flex flex-col h-screen overflow-y-auto shrink-0">
+    <aside className="w-64 border-r border-momentum-border bg-momentum-bg flex flex-col h-screen overflow-y-auto shrink-0 shadow-2xl lg:shadow-none">
       {/* Logo */}
       <div className="p-6 flex items-center gap-3 text-momentum-green-bright mb-4">
         <Activity size={28} />
@@ -43,7 +43,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 space-y-2">
+      <nav className="flex-1 px-4 space-y-2 pb-6">
         {NAV_ITEMS.map((item) => {
           const isActive = location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
           const Icon = item.icon;
@@ -51,6 +51,7 @@ export default function Sidebar() {
             <Link
               key={item.name}
               to={item.path}
+              onClick={() => onClose && onClose()}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                 isActive 
                   ? 'bg-momentum-panel text-momentum-green-bright border border-momentum-border' 
