@@ -1,5 +1,5 @@
 import express from 'express';
-import { protect } from '../../middleware/auth.middleware.js';
+import { authMiddleware } from '../../core/middlewares/auth.middleware.js';
 import {
     createSchedule,
     getSchedules,
@@ -9,7 +9,7 @@ import {
 
 const router = express.Router();
 
-router.use(protect);
+router.use(authMiddleware);
 
 router.route('/')
     .get(getSchedules)

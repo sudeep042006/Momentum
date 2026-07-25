@@ -17,7 +17,17 @@ const UserProfileSchema = new mongoose.Schema({
     profilePic: {
         type: String,
         default: ""
-    }
+    },
+    tagline: {
+        type: String,
+        default: "Builder • Learner • Thinker"
+    },
+    followers: [{
+        type: String
+    }],
+    following: [{
+        type: String
+    }]
 }, { timestamps: true });
 
 const UserProfile = mongoose.model('UserProfile', UserProfileSchema);

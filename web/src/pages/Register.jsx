@@ -8,16 +8,21 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       const response = await register({ name, email, password });
       localStorage.setItem('token', response.data.data.session.access_token);
+      localStorage.setItem('userName', response.data.data.user?.user_metadata?.name || name || 'User');
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -92,9 +97,14 @@ export default function Register() {
             <div>
               <button
                 type="submit"
-                className="flex w-full justify-center rounded-md border border-transparent bg-momentum-green-bright py-2 px-4 text-sm font-medium text-momentum-bg shadow-sm hover:bg-momentum-green-glow focus:outline-none focus:ring-2 focus:ring-momentum-green-bright focus:ring-offset-2 focus:ring-offset-momentum-bg"
+                disabled={isLoading}
+                className="flex w-full justify-center rounded-md border border-transparent bg-momentum-green-bright py-2 px-4 text-sm font-medium text-momentum-bg shadow-sm hover:bg-momentum-green-glow focus:outline-none focus:ring-2 focus:ring-momentum-green-bright focus:ring-offset-2 focus:ring-offset-momentum-bg disabled:opacity-70"
               >
-                Create Account
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-momentum-bg/30 border-t-momentum-bg rounded-full animate-spin"></div>
+                ) : (
+                  'Create Account'
+                )}
               </button>
             </div>
           </form>

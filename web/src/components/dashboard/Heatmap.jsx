@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ActivityCalendar } from 'react-activity-calendar';
+import { Tooltip } from 'react-tooltip';
 import { getHeatmap } from '../../services/daily.api';
 
 const HEATMAP_THEME = {
@@ -23,22 +24,40 @@ function generateEmptyCalendar() {
   return data;
 }
 
-export default function Heatmap() {
+export default function Heatmap({ completedTasksCount, totalTasksCount, heatmapData }) {
   const [calendarData, setCalendarData] = useState(generateEmptyCalendar());
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const scrollContainerRef = useRef(null);
 
   useEffect(() => {
-    const fetchHeatmapData = async () => {
-      try {
-        const today = new Date();
-        const lastYear = new Date();
-        lastYear.setDate(today.getDate() - 365);
-        
-        const startDate = lastYear.toISOString().split('T')[0];
-        const endDate = today.toISOString().split('T')[0];
+    // Scroll to the right end to show the most recent days by default
+    if (!isInitialLoading && scrollContainerRef.current) {
+      // Small timeout ensures the DOM has fully painted the calendar before scrolling
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
+        }
+      }, 50);
+    }
+  }, [isInitialLoading]);
 
-        const response = await getHeatmap(startDate, endDate);
-        const realData = response.data.data;
+  // 1. Initial network fetch only happens ONCE when the dashboard loads
+  useEffect(() => {
+    const loadHeatmapData = async () => {
+      try {
+        let realData = heatmapData;
+
+        if (!heatmapData) {
+          const today = new Date();
+          const lastYear = new Date();
+          lastYear.setDate(today.getDate() - 365);
+          
+          const startDate = lastYear.toISOString().split('T')[0];
+          const endDate = today.toISOString().split('T')[0];
+
+          const response = await getHeatmap(startDate, endDate);
+          realData = response.data.data;
+        }
         
         // Merge real data into the empty calendar
         const baseCalendar = generateEmptyCalendar();
@@ -50,7 +69,8 @@ export default function Heatmap() {
               baseCalendar[index] = {
                 date: baseCalendar[index].date,
                 count: day.tasksCompleted,
-                level: day.rank || 0
+                level: day.rank || 0,
+                total: day.totalTasks || 0
               };
             }
           });
@@ -60,12 +80,40 @@ export default function Heatmap() {
       } catch (error) {
         console.error("Failed to fetch heatmap data:", error);
       } finally {
-        setIsLoading(false);
+        setIsInitialLoading(false);
       }
     };
 
-    fetchHeatmapData();
-  }, []);
+    loadHeatmapData();
+  }, [heatmapData]);
+
+  // 2. Instant Optimistic UI update whenever a task is completed/uncompleted
+  useEffect(() => {
+    if (isInitialLoading) return; // Wait until initial fetch is done
+
+    setCalendarData(prevData => {
+      const newData = [...prevData];
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayIndex = newData.findIndex(d => d.date === todayStr);
+      
+      if (todayIndex !== -1 && totalTasksCount !== undefined && completedTasksCount !== undefined) {
+        // Calculate new level locally (0 to 5)
+        let newLevel = 0;
+        if (totalTasksCount > 0) {
+          const percentage = completedTasksCount / totalTasksCount;
+          newLevel = Math.ceil(percentage * 5); // 0.2 -> 1, 1.0 -> 5
+        }
+
+        newData[todayIndex] = {
+          ...newData[todayIndex],
+          count: completedTasksCount,
+          level: newLevel,
+          total: totalTasksCount
+        };
+      }
+      return newData;
+    });
+  }, [completedTasksCount, totalTasksCount, isInitialLoading]);
 
   return (
     <div className="bg-momentum-panel border border-momentum-border rounded-2xl p-6">
@@ -86,33 +134,61 @@ export default function Heatmap() {
         </select>
       </div>
 
-      <div className="w-full overflow-x-auto pb-4 flex justify-center">
-        {isLoading ? (
+      <div 
+        ref={scrollContainerRef}
+        className="w-full overflow-x-auto pb-4"
+      >
+        {isInitialLoading ? (
           <div className="h-[120px] flex items-center justify-center text-momentum-text-secondary">
             Loading heatmap...
           </div>
         ) : (
-          <ActivityCalendar
-            data={calendarData}
-            theme={HEATMAP_THEME}
-            colorScheme="dark"
-            maxLevel={5}
-            labels={{
-              legend: {
-                less: '0%',
-                more: '100%',
-              },
-              months: [
-                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-              ],
-              weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-            }}
-            blockSize={14}
-            blockRadius={2}
-            blockMargin={4}
-            fontSize={12}
-            showWeekdayLabels={false}
-          />
+          <div className="w-max mx-auto pr-2">
+            <ActivityCalendar
+              data={calendarData}
+              theme={HEATMAP_THEME}
+              colorScheme="dark"
+              maxLevel={5}
+              labels={{
+                legend: {
+                  less: '0%',
+                  more: '100%',
+                },
+                months: [
+                  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+                ],
+                weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+              }}
+              blockSize={14}
+              blockRadius={2}
+              blockMargin={4}
+              fontSize={12}
+              showWeekdayLabels={false}
+              renderBlock={(block, activity) => {
+                const total = activity.total || 0;
+                const completed = activity.count || 0;
+                
+                // Format date as ddmmyy (e.g. 250726 or 25/07/26)
+                const d = new Date(activity.date);
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const yy = String(d.getFullYear()).slice(-2);
+                const formattedDate = `${dd}/${mm}/${yy}`;
+                
+                const tooltipText = `${completed} tasks completed out of ${total} tasks on date ${formattedDate}`;
+
+                return React.cloneElement(block, {
+                  'data-tooltip-id': 'heatmap-tooltip',
+                  'data-tooltip-content': tooltipText,
+                });
+              }}
+            />
+            <Tooltip 
+              id="heatmap-tooltip" 
+              className="z-50 !bg-momentum-panel !border !border-momentum-border !text-white !rounded-xl !shadow-2xl !px-4 !py-2 !text-sm font-medium"
+              style={{ backdropFilter: 'blur(12px)' }}
+            />
+          </div>
         )}
       </div>
     </div>

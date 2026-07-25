@@ -99,7 +99,12 @@ const getDashboardStats = async (userId) => {
         });
 
         const avgCompletion = totalCreated > 0 ? Math.round((totalCompleted / totalCreated) * 100) : 0;
-        const recentDays = lists.slice(0, 7);
+        const recentDays = lists.slice(0, 7).map(l => ({
+            date: l.date,
+            tasksCompleted: l.tasksCompleted,
+            totalTasks: l.totalTasks,
+            rank: l.totalTasks > 0 ? Math.ceil((l.tasksCompleted / l.totalTasks) * 5) : 0
+        }));
 
         return {
             currentStreak,

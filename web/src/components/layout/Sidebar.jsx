@@ -1,4 +1,5 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useUser } from '../../context/UserContext';
 import { 
   LayoutDashboard, 
   CalendarDays, 
@@ -6,23 +7,32 @@ import {
   Clock, 
   BookOpen, 
   BarChart3, 
-  Settings,
-  Activity
+  Activity,
+  LogOut
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Today', path: '/dashboard/today', icon: CheckSquare },
   { name: 'Calendar', path: '/dashboard/calendar', icon: CalendarDays },
   { name: 'Tasks', path: '/dashboard/tasks', icon: CheckSquare },
   { name: 'Schedule', path: '/dashboard/schedule', icon: Clock },
   { name: 'Journal', path: '/dashboard/journal', icon: BookOpen },
-  { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3 },
-  { name: 'Settings', path: '/dashboard/settings', icon: Settings },
+  { name: 'Users', path: '/dashboard/users', icon: Activity },
 ];
 
 export default function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useUser();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    // We can also reload to clear UserContext
+    window.location.href = '/login';
+  };
+
+  const userName = user?.user_metadata?.name || 'User';
+  const initial = userName.charAt(0).toUpperCase();
 
   return (
     <aside className="w-64 border-r border-momentum-border bg-momentum-bg flex flex-col h-screen overflow-y-auto shrink-0">
@@ -53,36 +63,6 @@ export default function Sidebar() {
           );
         })}
       </nav>
-
-      {/* Focus Mode & Profile (Bottom) */}
-      <div className="p-4 space-y-4">
-        {/* Focus Mode Widget */}
-        <div className="bg-momentum-panel border border-momentum-border rounded-xl p-4 flex flex-col gap-2">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-momentum-text-secondary">Focus Mode</span>
-            <span className="text-momentum-green-bright font-bold">On</span>
-          </div>
-          <div className="h-8 flex items-end gap-1 opacity-50">
-            {/* Fake tiny graph */}
-            <div className="w-full h-1 bg-momentum-green-bright rounded-full"></div>
-            <div className="w-full h-3 bg-momentum-green-bright rounded-full"></div>
-            <div className="w-full h-2 bg-momentum-green-bright rounded-full"></div>
-            <div className="w-full h-5 bg-momentum-green-bright rounded-full"></div>
-            <div className="w-full h-4 bg-momentum-green-bright rounded-full"></div>
-          </div>
-        </div>
-
-        {/* Profile */}
-        <div className="flex items-center gap-3 px-2 pb-2">
-          <div className="w-10 h-10 rounded-full bg-momentum-panel border border-momentum-border flex items-center justify-center text-momentum-text-secondary font-bold">
-            S
-          </div>
-          <div>
-            <p className="text-white font-medium text-sm">Sudeep</p>
-            <p className="text-momentum-text-secondary text-xs">Developer</p>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }

@@ -1,17 +1,17 @@
 import api from './apiClient';
 
 export const getSchedules = () => {
-  return api.get('/schedules');
+  return api.get('/api/schedules');
 };
 
 export const createSchedule = (scheduleData) => {
-  return api.post('/schedules', scheduleData);
+  return api.post('/api/schedules', scheduleData);
 };
 
 export const updateSchedule = (id, scheduleData) => {
-  return api.put(`/schedules/${id}`, scheduleData);
+  return api.put(`/api/schedules/${id}`, scheduleData);
 };
 
 export const deleteSchedule = (id) => {
-  return api.delete(`/schedules/${id}`);
+  return api.delete(`/api/schedules/${id}`);
 };
