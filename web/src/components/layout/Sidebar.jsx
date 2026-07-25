@@ -27,6 +27,7 @@ export default function Sidebar({ onClose }) {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
     // We can also reload to clear UserContext
     window.location.href = '/login';
   };
