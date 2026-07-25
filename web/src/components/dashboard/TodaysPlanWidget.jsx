@@ -9,18 +9,22 @@ const PRIORITY_COLORS = {
   low: 'text-blue-400 border-blue-400/30 bg-blue-400/10',
 };
 
-export default function TodaysPlanWidget({ tasks, onTasksUpdated, isNewDay }) {
+export default function TodaysPlanWidget({ tasks, onTasksUpdated, onOptimisticUpdate, isNewDay }) {
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [isCloning, setIsCloning] = useState(false);
 
   const handleToggle = async (task) => {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+    // Optimistic UI update for instant feedback
+    if (onOptimisticUpdate) onOptimisticUpdate(task._id, newStatus);
+    
     try {
       await updateTask(task._id, { status: newStatus, priority: task.priority, category: task.category });
-      onTasksUpdated(); // Refetch all dashboard data
+      onTasksUpdated(); // Refetch all dashboard data in the background
     } catch (error) {
       console.error(error);
+      onTasksUpdated(); // Revert on failure
     }
   };
 

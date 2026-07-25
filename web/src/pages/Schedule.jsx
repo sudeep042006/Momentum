@@ -92,7 +92,7 @@ export default function Schedule() {
                 : 'bg-transparent border border-momentum-border text-momentum-text-secondary hover:text-white'
             }`}
           >
-            Monday - Friday
+            College Days (Working Days)
           </button>
           <button 
             onClick={() => setView('Weekend')}
@@ -102,7 +102,7 @@ export default function Schedule() {
                 : 'bg-transparent border border-momentum-border text-momentum-text-secondary hover:text-white'
             }`}
           >
-            Saturday - Sunday
+            Holidays
           </button>
         </div>
 

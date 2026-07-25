@@ -22,6 +22,19 @@ const register = async (req, res) => {
             return res.status(400).json({ message: "Invalid email or password" });
         }
 
+        // Auto-create MongoDB UserProfile
+        try {
+            const UserProfile = (await import('../../modules/users/user.model.js')).default;
+            await UserProfile.create({
+                user: data.user.id,
+                name: name,
+                email: email,
+                profilePic: ""
+            });
+        } catch (dbError) {
+            console.error("Failed to auto-create MongoDB profile:", dbError);
+        }
+
         return res.status(200).json({ data });
 
     } catch (error) {
