@@ -11,6 +11,11 @@ export default function Users() {
 
   useEffect(() => {
     const fetchUsers = async () => {
+      if (!searchQuery.trim()) {
+        setUsers([]);
+        setIsLoading(false);
+        return;
+      }
       setIsLoading(true);
       try {
         const token = localStorage.getItem('token');
@@ -57,8 +62,13 @@ export default function Users() {
           />
         </div>
 
-        {isLoading ? (
-          <div className="text-center text-momentum-text-secondary py-12">Searching...</div>
+        {searchQuery.trim() === '' ? (
+          <div className="text-center text-momentum-text-secondary py-16 flex flex-col items-center gap-4">
+            <Search size={48} className="text-momentum-border" />
+            <p className="text-lg">Type a name above to find community members</p>
+          </div>
+        ) : isLoading ? (
+          <div className="text-center text-momentum-text-secondary py-12 animate-pulse">Searching...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {users.map(u => (
