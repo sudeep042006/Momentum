@@ -80,10 +80,15 @@ const getProfile = async (req, res) => {
 const searchUsers = async (req, res) => {
     try {
         const query = req.query.q || '';
+        
+        // Escape regex characters to prevent errors
+        const escapedQuery = query.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+        // Use ^ anchor to only match names STARTING with the query
+        const regexPattern = `^${escapedQuery}`;
+        
         const users = await UserProfile.find({
             $or: [
-                { name: { $regex: query, $options: 'i' } },
-                { user: { $regex: query, $options: 'i' } }
+                { name: { $regex: regexPattern, $options: 'i' } }
             ]
         }).limit(20);
         
