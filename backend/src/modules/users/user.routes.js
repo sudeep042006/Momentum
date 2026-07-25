@@ -13,10 +13,8 @@ router.post('/login', Login);
 router.post('/profile', authMiddleware, upload.single('profilePic'), userController.createOrUpdateProfile);
 router.get('/profile', authMiddleware, userController.getProfile);
 
-// Get current authenticated user details from Supabase
-router.get('/me', authMiddleware, (req, res) => {
-    res.status(200).json({ data: req.user });
-});
+// Get current authenticated user details from Supabase & MongoDB
+router.get('/me', authMiddleware, userController.getMe);
 
 // Search users (e.g. for community page)
 router.get('/search', authMiddleware, userController.searchUsers);

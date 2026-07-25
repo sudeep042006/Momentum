@@ -215,4 +215,24 @@ const unfollowUser = async (req, res) => {
     }
 };
 
-export default { createOrUpdateProfile, getProfile, searchUsers, getPublicProfile, followUser, unfollowUser };
+const getMe = async (req, res) => {
+    try {
+        const supabaseUser = req.user;
+        const profile = await userService.getProfile(supabaseUser.id);
+        
+        // Merge Supabase user with MongoDB profile so frontend has all data
+        const mergedUser = {
+            ...supabaseUser,
+            profilePic: profile?.profilePic || supabaseUser.user_metadata?.profilePic || "",
+            name: profile?.name || supabaseUser.user_metadata?.name || "",
+            tagline: profile?.tagline || "Builder • Learner • Thinker"
+        };
+        
+        res.status(200).json({ data: mergedUser });
+    } catch (error) {
+        console.error("Error fetching me:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export default { createOrUpdateProfile, getProfile, searchUsers, getPublicProfile, followUser, unfollowUser, getMe };
