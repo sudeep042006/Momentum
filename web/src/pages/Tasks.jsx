@@ -14,8 +14,6 @@ const PRIORITY_COLORS = {
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newPriority, setNewPriority] = useState('medium');
-  const [newCategory, setNewCategory] = useState('work');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -41,8 +39,8 @@ export default function Tasks() {
       const response = await createTask({ 
         title: newTaskTitle, 
         status: 'pending',
-        priority: newPriority,
-        category: newCategory
+        priority: 'medium',
+        category: 'work'
       });
       setTasks([response.data.data, ...tasks]);
       setNewTaskTitle('');
@@ -104,33 +102,6 @@ export default function Tasks() {
             />
             
             <div className="flex gap-4">
-              <div className="relative flex items-center bg-momentum-bg border border-momentum-border rounded-xl px-4 py-2">
-                <Flag size={16} className="text-momentum-text-secondary mr-2" />
-                <select 
-                  value={newPriority}
-                  onChange={(e) => setNewPriority(e.target.value)}
-                  className="bg-transparent text-white focus:outline-none cursor-pointer appearance-none pr-4"
-                >
-                  <option value="low" className="bg-momentum-panel text-blue-400">Low</option>
-                  <option value="medium" className="bg-momentum-panel text-yellow-400">Medium</option>
-                  <option value="high" className="bg-momentum-panel text-red-400">High</option>
-                </select>
-              </div>
-
-              <div className="relative flex items-center bg-momentum-bg border border-momentum-border rounded-xl px-4 py-2">
-                <Folder size={16} className="text-momentum-text-secondary mr-2" />
-                <select 
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className="bg-transparent text-white focus:outline-none cursor-pointer appearance-none pr-4"
-                >
-                  <option value="work" className="bg-momentum-panel">Work</option>
-                  <option value="personal" className="bg-momentum-panel">Personal</option>
-                  <option value="health" className="bg-momentum-panel">Health</option>
-                  <option value="learning" className="bg-momentum-panel">Learning</option>
-                </select>
-              </div>
-
               <button
                 type="submit"
                 disabled={!newTaskTitle.trim()}

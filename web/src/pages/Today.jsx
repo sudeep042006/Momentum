@@ -13,6 +13,7 @@ const PRIORITY_COLORS = {
 
 export default function Today() {
   const [tasks, setTasks] = useState([]);
+  const [totalTasksToday, setTotalTasksToday] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function Today() {
     try {
       const todayStr = new Date().toISOString().split('T')[0];
       const response = await getTasks(todayStr);
+      setTotalTasksToday(response.data.data.length);
       const activeTasks = response.data.data.filter(t => t.status === 'pending');
       const priorityWeight = { high: 3, medium: 2, low: 1 };
       activeTasks.sort((a, b) => priorityWeight[b.priority] - priorityWeight[a.priority]);
@@ -59,9 +61,11 @@ export default function Today() {
         >
           <h1 className="text-4xl font-extrabold text-white tracking-tight mb-3">Today's Focus</h1>
           <p className="text-momentum-text-secondary text-lg">
-            {tasks.length === 0 
-              ? "You've crushed all your tasks for today. Time to rest!" 
-              : `You have ${tasks.length} tasks lined up. Let's build momentum.`}
+            {totalTasksToday === 0 
+              ? "You haven't scheduled any tasks for today yet."
+              : tasks.length === 0 
+                ? "You've crushed all your tasks for today. Time to rest!" 
+                : `You have ${tasks.length} tasks lined up. Let's build momentum.`}
           </p>
         </motion.div>
 
@@ -138,9 +142,13 @@ export default function Today() {
               className="flex flex-col items-center justify-center p-12 bg-momentum-panel border border-momentum-green/20 rounded-3xl"
             >
               <CheckCircle2 size={80} className="text-momentum-green mb-6 opacity-80" />
-              <h2 className="text-2xl font-bold text-white mb-2">Day Complete</h2>
+              <h2 className="text-2xl font-bold text-white mb-2">
+                {totalTasksToday === 0 ? "No Tasks Today" : "Day Complete"}
+              </h2>
               <p className="text-momentum-text-secondary text-center max-w-sm">
-                You've cleared all your active tasks. Great job building momentum today!
+                {totalTasksToday === 0 
+                  ? "Take a moment to plan your day or enjoy the rest." 
+                  : "You've cleared all your active tasks. Great job building momentum today!"}
               </p>
             </motion.div>
           )
