@@ -8,6 +8,7 @@ import userRoutes from './modules/users/user.routes.js';
 import taskRoutes from './modules/tasks/task.routes.js';
 import dailyRoutes from './modules/daily-lists/daily.routes.js';
 import badgeRoutes from './modules/badges/badge.routes.js';
+import scheduleRoutes from './modules/schedules/schedule.routes.js';
 
 import http from 'http';
 import { initSocket } from './config/socket.js';
@@ -31,6 +32,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/daily-activity', dailyRoutes);
 app.use('/api/badges', badgeRoutes);
+app.use('/api/schedules', scheduleRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello from Momentum Backend!');

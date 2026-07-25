@@ -49,7 +49,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <Header />
+      <Header showGreeting={true} />
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-2 pb-10 max-w-[1600px] mx-auto px-6 w-full">
         
         {/* Main Content Area (Left: Heatmap + Today's Plan + Timer) */}

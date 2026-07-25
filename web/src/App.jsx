@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import PlaceholderPage from './pages/PlaceholderPage';
 import Tasks from './pages/Tasks';
 import Today from './pages/Today';
+import Schedule from './pages/Schedule';
 
 function App() {
   return (
@@ -20,7 +21,7 @@ function App() {
         <Route path="/dashboard/today" element={<Today />} />
         <Route path="/dashboard/calendar" element={<PlaceholderPage title="Calendar" />} />
         <Route path="/dashboard/tasks" element={<Tasks />} />
-        <Route path="/dashboard/schedule" element={<PlaceholderPage title="Schedule" />} />
+        <Route path="/dashboard/schedule" element={<Schedule />} />
         <Route path="/dashboard/journal" element={<PlaceholderPage title="Journal" />} />
         <Route path="/dashboard/analytics" element={<PlaceholderPage title="Analytics & Progress" />} />
         <Route path="/dashboard/settings" element={<PlaceholderPage title="Settings" />} />

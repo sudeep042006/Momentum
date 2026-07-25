@@ -76,7 +76,7 @@ export default function TodaysPlanWidget({ tasks, onTasksUpdated, isNewDay }) {
       </div>
 
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-        {isNewDay && tasks.length === 0 ? (
+        {isNewDay && tasks.length === 0 && !isAdding ? (
           <div className="flex flex-col items-center justify-center h-48 text-center bg-momentum-bg/50 rounded-xl border border-dashed border-momentum-border p-6">
             <h4 className="text-white font-medium mb-2">It's a new day!</h4>
             <p className="text-sm text-momentum-text-secondary mb-4">You have a fresh slate. Would you like to carry over yesterday's tasks?</p>
