@@ -13,6 +13,7 @@ import Users from './pages/Users';
 import UserProfile from './pages/UserProfile';
 import Profile from './pages/Profile';
 import Calendar from './pages/Calendar';
+import RecentHistory from './pages/RecentHistory';
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -44,6 +45,7 @@ function App() {
 
         <Route path="/dashboard/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
         <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/dashboard/history" element={<ProtectedRoute><RecentHistory /></ProtectedRoute>} />
         
         {/* Public Shareable Profile Route */}
         <Route path="/u/:username" element={<UserProfile />} />
