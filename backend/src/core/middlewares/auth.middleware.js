@@ -78,5 +78,24 @@ const authMiddleware = async (req, res, next) => {
         console.log(error);
     }
 }
+const refreshToken = async (req, res) => {
+    try {
+        const { refresh_token } = req.body;
+        if (!refresh_token) {
+            return res.status(400).json({ message: "Refresh token is required" });
+        }
 
-export {register, Login, authMiddleware};
+        const { data, error } = await supabase.auth.refreshSession({ refresh_token });
+        
+        if (error) {
+            return res.status(401).json({ message: "Invalid or expired refresh token" });
+        }
+
+        return res.status(200).json({ data });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Server error during token refresh" });
+    }
+}
+
+export {register, Login, authMiddleware, refreshToken};

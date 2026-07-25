@@ -17,6 +17,7 @@ export default function Register() {
     try {
       const response = await register({ name, email, password });
       localStorage.setItem('token', response.data.data.session.access_token);
+      localStorage.setItem('refresh_token', response.data.data.session.refresh_token);
       localStorage.setItem('userName', response.data.data.user?.user_metadata?.name || name || 'User');
       navigate('/dashboard');
     } catch (err) {

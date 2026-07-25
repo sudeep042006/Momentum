@@ -45,6 +45,7 @@ export default function Header() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
     window.location.href = '/login';
   };
 
