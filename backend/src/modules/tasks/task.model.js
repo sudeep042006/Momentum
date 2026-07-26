@@ -14,6 +14,14 @@ const taskSchema = new mongoose.Schema({
         required: true,
         default: () => new Date().toISOString().split('T')[0] // Fallback for old tasks
     },
+    startTime: {
+        type: String,
+        default: null
+    },
+    endTime: {
+        type: String,
+        default: null
+    },
     status: {
         type: String,
         enum: ['pending', 'completed'],

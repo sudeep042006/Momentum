@@ -1,10 +1,12 @@
 import Task from './task.model.js';
 import { 
+    getDailyList,
     recordTaskCreation, 
     recordTaskCompletion, 
     recordTaskUncompletion, 
     recordTaskDeletion 
 } from '../daily-lists/daily.service.js';
+import scheduleService from '../schedules/schedule.service.js';
 import { getIO } from '../../config/socket.js';
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
@@ -30,7 +32,16 @@ const createTask = async (userId, taskData) => {
 };
 
 const getTasks = async (userId, date) => {
-    // If date is provided, filter by it. Otherwise return all (or just today by default).
+    // Check for auto-sync if asking for today
+    if (date === getTodayString()) {
+        const dailyList = await getDailyList(userId, date);
+        if (!dailyList.hasSyncedSchedule) {
+            await scheduleService.syncScheduleTasks(userId, date);
+            dailyList.hasSyncedSchedule = true;
+            await dailyList.save();
+        }
+    }
+
     const query = { user: userId };
     if (date) {
         query.date = date;

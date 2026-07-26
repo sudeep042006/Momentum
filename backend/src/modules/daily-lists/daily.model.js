@@ -13,6 +13,10 @@ const DailyListSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    hasSyncedSchedule: {
+        type: Boolean,
+        default: false
+    },
     tasksCompleted: {
         type: Number,
         default: 0
