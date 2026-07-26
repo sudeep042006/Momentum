@@ -9,6 +9,16 @@ const PRIORITY_COLORS = {
   low: 'text-blue-400 border-blue-400/30 bg-blue-400/10',
 };
 
+const formatTime12h = (time24) => {
+  if (!time24) return '';
+  const [hours, minutes] = time24.split(':');
+  let h = parseInt(hours, 10);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  h = h ? h : 12;
+  return `${h.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+};
+
 export default function TodaysPlanWidget({ tasks, onTasksUpdated, onOptimisticUpdate, isNewDay }) {
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -57,6 +67,15 @@ export default function TodaysPlanWidget({ tasks, onTasksUpdated, onOptimisticUp
       setIsCloning(false);
     }
   };
+
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (a.status === 'completed' && b.status !== 'completed') return 1;
+    if (a.status !== 'completed' && b.status === 'completed') return -1;
+    if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
+    if (a.startTime && !b.startTime) return -1;
+    if (!a.startTime && b.startTime) return 1;
+    return 0;
+  });
 
   return (
     <div className="bg-momentum-panel border border-momentum-border rounded-2xl p-6 shadow-lg h-full flex flex-col">
@@ -114,7 +133,7 @@ export default function TodaysPlanWidget({ tasks, onTasksUpdated, onOptimisticUp
                 </motion.form>
               )}
               
-              {tasks.map((task) => (
+              {sortedTasks.map((task) => (
                 <motion.div
                   layout
                   initial={{ opacity: 0, y: 10 }}
@@ -132,6 +151,11 @@ export default function TodaysPlanWidget({ tasks, onTasksUpdated, onOptimisticUp
                   </div>
                   
                   <div className="flex items-center gap-2">
+                    {task.startTime && (
+                      <span className="text-[10px] font-mono opacity-80 uppercase tracking-widest text-momentum-text-secondary mr-2">
+                        {formatTime12h(task.startTime)}
+                      </span>
+                    )}
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border border-momentum-border bg-momentum-bg text-momentum-text-secondary">
                       {task.category || 'Work'}
                     </span>

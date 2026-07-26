@@ -1,22 +1,13 @@
-import express from 'express';
+import { Router } from 'express';
+import scheduleController from './schedule.controller.js';
 import { authMiddleware } from '../../core/middlewares/auth.middleware.js';
-import {
-    createSchedule,
-    getSchedules,
-    updateSchedule,
-    deleteSchedule
-} from './schedule.controller.js';
 
-const router = express.Router();
-
+const router = Router();
 router.use(authMiddleware);
 
-router.route('/')
-    .get(getSchedules)
-    .post(createSchedule);
-
-router.route('/:id')
-    .put(updateSchedule)
-    .delete(deleteSchedule);
+router.get('/', scheduleController.getSchedule);
+router.put('/', scheduleController.updateSchedule);
+router.post('/generate', scheduleController.generateTemplate);
+router.post('/sync', scheduleController.syncToday);
 
 export default router;

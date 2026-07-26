@@ -1,17 +1,6 @@
-import api from './apiClient';
+import apiClient from './apiClient';
 
-export const getSchedules = () => {
-  return api.get('/api/schedules');
-};
-
-export const createSchedule = (scheduleData) => {
-  return api.post('/api/schedules', scheduleData);
-};
-
-export const updateSchedule = (id, scheduleData) => {
-  return api.put(`/api/schedules/${id}`, scheduleData);
-};
-
-export const deleteSchedule = (id) => {
-  return api.delete(`/api/schedules/${id}`);
-};
+export const getSchedule = () => apiClient.get('/api/schedules');
+export const updateSchedule = (data) => apiClient.put('/api/schedules', data);
+export const generateScheduleTemplate = () => apiClient.post('/api/schedules/generate');
+export const syncScheduleTasks = () => apiClient.post('/api/schedules/sync');

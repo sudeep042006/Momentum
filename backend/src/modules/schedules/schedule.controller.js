@@ -1,43 +1,44 @@
-import * as scheduleService from './schedule.service.js';
+import scheduleService from './schedule.service.js';
 
-export const createSchedule = async (req, res) => {
+const getSchedule = async (req, res) => {
     try {
-        const schedule = await scheduleService.createSchedule(req.user.id, req.body);
-        res.status(201).json({ success: true, data: schedule });
+        const schedule = await scheduleService.getSchedule(req.user.id);
+        res.status(200).json({ data: schedule });
     } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
+        console.error("Error fetching schedule:", error);
+        res.status(500).json({ message: "Internal server error" });
     }
 };
 
-export const getSchedules = async (req, res) => {
+const updateSchedule = async (req, res) => {
     try {
-        const schedules = await scheduleService.getSchedules(req.user.id);
-        res.status(200).json({ success: true, data: schedules });
+        const schedule = await scheduleService.updateSchedule(req.user.id, req.body);
+        res.status(200).json({ data: schedule });
     } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
+        console.error("Error updating schedule:", error);
+        res.status(500).json({ message: "Internal server error" });
     }
 };
 
-export const updateSchedule = async (req, res) => {
+const generateTemplate = async (req, res) => {
     try {
-        const schedule = await scheduleService.updateSchedule(req.user.id, req.params.id, req.body);
-        if (!schedule) {
-            return res.status(404).json({ success: false, message: 'Schedule not found' });
-        }
-        res.status(200).json({ success: true, data: schedule });
+        const schedule = await scheduleService.generateTemplate(req.user.id);
+        res.status(200).json({ data: schedule });
     } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
+        console.error("Error generating schedule template:", error);
+        res.status(500).json({ message: "Internal server error" });
     }
 };
 
-export const deleteSchedule = async (req, res) => {
+const syncToday = async (req, res) => {
     try {
-        const schedule = await scheduleService.deleteSchedule(req.user.id, req.params.id);
-        if (!schedule) {
-            return res.status(404).json({ success: false, message: 'Schedule not found' });
-        }
-        res.status(200).json({ success: true, data: {} });
+        const dateStr = new Date().toISOString().split('T')[0];
+        const result = await scheduleService.syncScheduleTasks(req.user.id, dateStr);
+        res.status(200).json({ message: "Synced successfully", count: result.tasksCreatedCount, scheduleType: result.scheduleType });
     } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
+        console.error("Error syncing schedule:", error);
+        res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export default { getSchedule, updateSchedule, generateTemplate, syncToday };

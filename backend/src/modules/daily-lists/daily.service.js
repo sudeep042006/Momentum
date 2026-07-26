@@ -120,6 +120,7 @@ const getDashboardStats = async (userId) => {
 }
 
 export { 
+    getDailyList,
     recordTaskCreation, 
     recordTaskCompletion, 
     recordTaskUncompletion, 

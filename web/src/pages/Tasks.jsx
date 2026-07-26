@@ -12,6 +12,16 @@ const PRIORITY_COLORS = {
   low: 'text-blue-400',
 };
 
+const formatTime12h = (time24) => {
+  if (!time24) return '';
+  const [hours, minutes] = time24.split(':');
+  let h = parseInt(hours, 10);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  h = h ? h : 12;
+  return `${h.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+};
+
 export default function Tasks() {
   const [todayTasks, setTodayTasks] = useState([]);
   const [historyTasks, setHistoryTasks] = useState([]);
@@ -84,8 +94,15 @@ export default function Tasks() {
     }
   };
 
-  const pendingTasks = todayTasks.filter(t => t.status === 'pending');
-  const completedTasks = todayTasks.filter(t => t.status === 'completed');
+  const sortedTasks = [...todayTasks].sort((a, b) => {
+    if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
+    if (a.startTime && !b.startTime) return -1; // tasks with time go first
+    if (!a.startTime && b.startTime) return 1;
+    return 0;
+  });
+
+  const pendingTasks = sortedTasks.filter(t => t.status === 'pending');
+  const completedTasks = sortedTasks.filter(t => t.status === 'completed');
 
   const yesterdayDateString = new Date(new Date().setDate(new Date().getDate() - 1))
     .toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
@@ -254,6 +271,11 @@ function TaskCard({ task, onToggle, onDelete }) {
       </div>
       
       <div className="flex items-center gap-4">
+         {task.startTime && (
+           <span className="text-[10px] font-mono opacity-80 uppercase tracking-widest text-momentum-text-secondary">
+             {formatTime12h(task.startTime)}
+           </span>
+         )}
          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-momentum-panel border border-momentum-border text-momentum-text-secondary">
            {task.category || 'WORK'}
          </span>
