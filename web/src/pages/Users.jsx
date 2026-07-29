@@ -3,6 +3,7 @@ import { Search, User as UserIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import Header from '../components/layout/Header';
+import apiClient from '../services/apiClient';
 
 export default function Users() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -18,13 +19,8 @@ export default function Users() {
       }
       setIsLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_API}/api/users/search?q=${searchQuery}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
+        const response = await apiClient.get(`/api/users/search?q=${searchQuery}`);
+        const data = response.data;
         if (data.success) {
           setUsers(data.data);
         }
