@@ -4,7 +4,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import Header from '../components/layout/Header';
 import Heatmap from '../components/dashboard/Heatmap';
 import { useUser } from '../context/UserContext';
-import axios from 'axios';
+import apiClient from '../services/apiClient';
 
 export default function Profile() {
   const { user, login } = useUser();
@@ -46,8 +46,8 @@ export default function Profile() {
     if (!nameToFetch) return;
     try {
       const fetchName = nameToFetch.toLowerCase().replace(/\\s+/g, '');
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_API}/api/users/public/${fetchName}`);
-      const data = await res.json();
+      const res = await apiClient.get(`/api/users/public/${fetchName}`);
+      const data = res.data;
       if (data.success) {
         setProfileData(data.data.profile);
         if (data.data.profile.tagline) {
@@ -58,21 +58,19 @@ export default function Profile() {
         setBadges(data.data.badges || []);
       } else if (data.message === 'User not found' && user) {
         // Auto-create MongoDB profile if it doesn't exist yet
-        const token = localStorage.getItem('token');
         const formData = new FormData();
         formData.append('name', nameToFetch);
         formData.append('email', user.email);
         
-        await axios.post(`${import.meta.env.VITE_BACKEND_API}/api/users/profile`, formData, {
+        await apiClient.post(`/api/users/profile`, formData, {
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
           }
         });
         
         // Retry fetch after creation
-        const retryRes = await fetch(`${import.meta.env.VITE_BACKEND_API}/api/users/public/${fetchName}`);
-        const retryData = await retryRes.json();
+        const retryRes = await apiClient.get(`/api/users/public/${fetchName}`);
+        const retryData = retryRes.data;
         if (retryData.success) {
           setProfileData(retryData.data.profile);
           if (retryData.data.profile.tagline) {
@@ -110,9 +108,8 @@ export default function Profile() {
       }
 
       const token = localStorage.getItem('token');
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_API}/api/users/profile`, formData, {
+      const response = await apiClient.post(`/api/users/profile`, formData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });

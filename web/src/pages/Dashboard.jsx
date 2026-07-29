@@ -8,6 +8,7 @@ import TodaysPlanWidget from '../components/dashboard/TodaysPlanWidget';
 import CalendarTasksWidget from '../components/dashboard/CalendarTasksWidget';
 import { getDashboardStats } from '../services/daily.api';
 import { getTasks } from '../services/task.api';
+import apiClient from '../services/apiClient';
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -30,10 +31,8 @@ export default function Dashboard() {
       setTasks(todayTasks);
       
       // 3. Fetch Milestones
-      const milestonesRes = await fetch(`${import.meta.env.VITE_BACKEND_API}/api/milestones`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      const milestonesData = await milestonesRes.json();
+      const milestonesRes = await apiClient.get(`/api/milestones`);
+      const milestonesData = milestonesRes.data;
       if (milestonesData.success) {
         setMilestones(milestonesData.data);
       }
@@ -62,11 +61,8 @@ export default function Dashboard() {
 
   const handleMilestoneToggle = async (id) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_API}/api/milestones/${id}/toggle`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      const data = await response.json();
+      const response = await apiClient.put(`/api/milestones/${id}/toggle`);
+      const data = response.data;
       if (data.success) {
         setMilestones(milestones.map(m => m._id === id ? data.data : m));
       }

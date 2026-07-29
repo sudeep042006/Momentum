@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Flame, ArrowLeft, MapPin, Calendar, Award, Share, CheckCircle, Activity, UserPlus, UserCheck, Target, Check } from 'lucide-react';
 import Heatmap from '../components/dashboard/Heatmap';
 import { useUser } from '../context/UserContext';
+import apiClient from '../services/apiClient';
 
 export default function UserProfile() {
   const { username } = useParams();
@@ -18,8 +19,8 @@ export default function UserProfile() {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_API}/api/users/public/${encodeURIComponent(username)}`);
-      const data = await response.json();
+      const response = await apiClient.get(`/api/users/public/${encodeURIComponent(username)}`);
+      const data = response.data;
       if (data.success) {
         setProfileData(data.data);
         if (currentUser && data.data.profile.followers.includes(currentUser.id)) {
@@ -46,16 +47,10 @@ export default function UserProfile() {
     setIsTogglingFollow(true);
     
     try {
-      const token = localStorage.getItem('token');
       const action = isFollowing ? 'unfollow' : 'follow';
       
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_API}/api/users/${encodeURIComponent(username)}/${action}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const response = await apiClient.post(`/api/users/${encodeURIComponent(username)}/${action}`);
+      const data = response.data;
       if (data.success) {
         fetchProfile();
       }
