@@ -1,5 +1,4 @@
 import taskService from './task.service.js';
-import { encrypt, decrypt } from '../../utils/encryption.js';
 
 const createTask = async (req, res) => {
     try {
@@ -9,9 +8,7 @@ const createTask = async (req, res) => {
             return res.status(400).json({ message: "Task title is required" });
         }
 
-        const encryptedTitle = encrypt(title);
-
-        const task = await taskService.createTask(req.user.id, { title: encryptedTitle.encryptedData, status, priority, category, iv: encryptedTitle.iv, authTag: encryptedTitle.authTag });
+        const task = await taskService.createTask(req.user.id, { title, status, priority, category });
         res.status(201).json({ data: task });
     } catch (error) {
         console.error("Error creating task:", error);
@@ -23,22 +20,7 @@ const getTasks = async (req, res) => {
     try {
         const { date } = req.query;
         const tasks = await taskService.getTasks(req.user.id, date);
-
-        const decryptedTasks = tasks.map((task) => {
-            let decryptedTitle = task.title;
-            // Only attempt to decrypt if the encryption keys exist
-            if (task.iv && task.authTag) {
-                try {
-                    decryptedTitle = decrypt(task.title, task.iv, task.authTag);
-                } catch (e) {
-                    console.error("Failed to decrypt task:", task._id);
-                }
-            }
-            // Mongoose documents need to be converted to objects or have their properties directly mapped
-            const taskObj = task.toObject ? task.toObject() : task;
-            return { ...taskObj, title: decryptedTitle };
-        });
-        res.status(200).json({ data: decryptedTasks });
+        res.status(200).json({ data: tasks });
     } catch (error) {
         console.error("Error fetching tasks:", error);
         res.status(500).json({ message: "Internal server error" });
@@ -63,14 +45,9 @@ const updateTasks = async (req, res) => {
     try {
         const { title, status, priority, category } = req.body;
 
-        const updateData = { status, priority, category };
-        
-        if (title) {
-            const encryptedTitle = encrypt(title);
-            updateData.title = encryptedTitle.encryptedData;
-            updateData.iv = encryptedTitle.iv;
-            updateData.authTag = encryptedTitle.authTag;
-        }
+        const updateData = { title, status, priority, category };
+        // Remove undefined fields
+        Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
         const updatedTask = await taskService.updateTask(req.user.id, req.params.id, updateData);
 
@@ -78,19 +55,7 @@ const updateTasks = async (req, res) => {
             return res.status(404).json({ message: "Task not found" });
         }
 
-        let decryptedTitle = updatedTask.title;
-        if (updatedTask.iv && updatedTask.authTag) {
-            try {
-                decryptedTitle = decrypt(updatedTask.title, updatedTask.iv, updatedTask.authTag);
-            } catch (e) {
-                console.error("Failed to decrypt updated task");
-            }
-        }
-        
-        const taskObj = updatedTask.toObject ? updatedTask.toObject() : updatedTask;
-        taskObj.title = decryptedTitle;
-
-        res.status(200).json({ data: taskObj });
+        res.status(200).json({ data: updatedTask });
     } catch (error) {
         console.error("Error updating task:", error);
         res.status(500).json({ message: "Internal server error" });
