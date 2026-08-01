@@ -9,6 +9,8 @@ const taskSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    iv: { type: String },
+    authTag: { type: String },
     date: {
         type: String,
         required: true,
