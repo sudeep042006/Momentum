@@ -9,6 +9,8 @@ const MilestoneSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    iv: { type: String },
+    authTag: { type: String },
     description: {
         type: String,
         default: ""

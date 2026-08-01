@@ -2,6 +2,32 @@ import Schedule from './schedule.model.js';
 import Task from '../tasks/task.model.js';
 import { getDailyList, recordTaskCreation } from '../daily-lists/daily.service.js';
 import DailyList from '../daily-lists/daily.model.js';
+import { encrypt, decrypt } from '../../utils/encryption.js';
+
+const decryptBlocks = (blocks) => {
+    return blocks.map(b => {
+        if (b.iv && b.authTag) {
+            try {
+                b.title = decrypt(b.title, b.iv, b.authTag);
+            } catch (e) {
+                console.error("Decryption failed for schedule block", b.id);
+            }
+        }
+        return b;
+    });
+};
+
+const encryptBlocks = (blocks) => {
+    return blocks.map(b => {
+        // Only encrypt if it's not already encrypted (i.e. missing iv/authTag from client)
+        // If the client sends back the same plaintext, we just re-encrypt it.
+        const encrypted = encrypt(b.title);
+        b.title = encrypted.encryptedData;
+        b.iv = encrypted.iv;
+        b.authTag = encrypted.authTag;
+        return b;
+    });
+};
 
 const getSchedule = async (userId) => {
     let schedule = await Schedule.findOne({ user: userId });
@@ -9,11 +35,20 @@ const getSchedule = async (userId) => {
         schedule = new Schedule({ user: userId, workingDays: [], holidays: [] });
         await schedule.save();
     }
-    return schedule;
+    
+    const schedObj = schedule.toObject();
+    if (schedObj.workingDays) schedObj.workingDays = decryptBlocks(schedObj.workingDays);
+    if (schedObj.holidays) schedObj.holidays = decryptBlocks(schedObj.holidays);
+    
+    return schedObj;
 };
 
 const updateSchedule = async (userId, data) => {
     let schedule = await Schedule.findOne({ user: userId });
+    
+    if (data.workingDays) data.workingDays = encryptBlocks(data.workingDays);
+    if (data.holidays) data.holidays = encryptBlocks(data.holidays);
+
     if (!schedule) {
         schedule = new Schedule({ user: userId, ...data });
     } else {
@@ -21,7 +56,14 @@ const updateSchedule = async (userId, data) => {
         if (data.workingDays) schedule.workingDays = data.workingDays;
         if (data.holidays) schedule.holidays = data.holidays;
     }
-    return await schedule.save();
+    
+    await schedule.save();
+    
+    const schedObj = schedule.toObject();
+    if (schedObj.workingDays) schedObj.workingDays = decryptBlocks(schedObj.workingDays);
+    if (schedObj.holidays) schedObj.holidays = decryptBlocks(schedObj.holidays);
+    
+    return schedObj;
 };
 
 const generateTemplate = async (userId) => {
@@ -56,8 +98,14 @@ const syncScheduleTasks = async (userId, dateStr) => {
     const tasksToCreate = blocks.filter(b => b.addToDailyList);
     const uniqueTaskTitles = [...new Set(tasksToCreate.map(b => b.title))];
     
+    // existingTasks will have encrypted titles, we need to decrypt them to check uniqueness
     const existingTasks = await Task.find({ user: userId, date: dateStr });
-    const existingTitles = new Set(existingTasks.map(t => t.title));
+    const existingTitles = new Set(existingTasks.map(t => {
+        if (t.iv && t.authTag) {
+            try { return decrypt(t.title, t.iv, t.authTag); } catch(e) {}
+        }
+        return t.title;
+    }));
     
     let tasksCreatedCount = 0;
     
@@ -72,9 +120,14 @@ const syncScheduleTasks = async (userId, dateStr) => {
     for (const title of uniqueTaskTitles) {
         if (!existingTitles.has(title)) {
             const block = tasksToCreate.find(b => b.title === title);
+            
+            const encryptedTitle = encrypt(title);
+            
             const newTask = new Task({
                 user: userId,
-                title: title,
+                title: encryptedTitle.encryptedData,
+                iv: encryptedTitle.iv,
+                authTag: encryptedTitle.authTag,
                 date: dateStr,
                 status: 'pending',
                 priority: 'medium',
