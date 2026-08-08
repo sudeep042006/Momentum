@@ -98,4 +98,48 @@ const refreshToken = async (req, res) => {
     }
 }
 
-export {register, Login, authMiddleware, refreshToken};
+const requestPasswordReset = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: "Email is required" });
+        }
+
+        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password`,
+        });
+
+        if (error) {
+            return res.status(400).json({ message: error.message });
+        }
+
+        return res.status(200).json({ message: "Password reset link sent to email" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Server error" });
+    }
+};
+
+const updatePassword = async (req, res) => {
+    try {
+        const { newPassword } = req.body;
+        if (!newPassword) {
+            return res.status(400).json({ message: "New password is required" });
+        }
+
+        const { data, error } = await supabase.auth.updateUser({
+            password: newPassword
+        });
+
+        if (error) {
+            return res.status(400).json({ message: error.message });
+        }
+
+        return res.status(200).json({ message: "Password updated successfully" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Server error" });
+    }
+};
+
+export {register, Login, authMiddleware, refreshToken, requestPasswordReset, updatePassword};

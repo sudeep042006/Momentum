@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, Login, authMiddleware, refreshToken } from '../../core/middlewares/auth.middleware.js';
+import { register, Login, authMiddleware, refreshToken, requestPasswordReset, updatePassword } from '../../core/middlewares/auth.middleware.js';
 import userController from './user.controller.js';
 import upload from '../../core/middlewares/multer.js';
 
@@ -9,6 +9,8 @@ const router = express.Router();
 router.post('/register', register);
 router.post('/login', Login);
 router.post('/refresh', refreshToken);
+router.post('/forgot-password', requestPasswordReset);
+router.post('/reset-password', authMiddleware, updatePassword);
 
 // Profile routes
 router.post('/profile', authMiddleware, upload.single('profilePic'), userController.createOrUpdateProfile);

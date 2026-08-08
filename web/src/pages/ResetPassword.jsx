@@ -1,26 +1,48 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../services/auth.api';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { resetPassword } from '../services/auth.api';
 import { Activity } from 'lucide-react';
+import apiClient from '../services/apiClient'; // Used to set token directly if needed
 
-export default function Login() {
-  const [email, setEmail] = useState('');
+export default function ResetPassword() {
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleLogin = async (e) => {
+  useEffect(() => {
+    // Supabase redirects here with access_token in the URL hash fragment
+    const hashParams = new URLSearchParams(location.hash.replace('#', '?'));
+    const accessToken = hashParams.get('access_token');
+    
+    if (accessToken) {
+      // Store it temporarily so our API client can use it for the reset request
+      localStorage.setItem('token', accessToken);
+    } else if (!localStorage.getItem('token')) {
+      // If no token in URL and no token in storage, redirect to login
+      navigate('/login');
+    }
+  }, [location, navigate]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    
     setIsLoading(true);
+    setError('');
+    
     try {
-      const response = await login(email, password);
-      localStorage.setItem('token', response.data.data.session.access_token);
-      localStorage.setItem('refresh_token', response.data.data.session.refresh_token);
-      localStorage.setItem('userName', response.data.data.user?.user_metadata?.name || 'User');
-      navigate('/dashboard');
+      await resetPassword(password);
+      // Remove token so they have to log in normally
+      localStorage.removeItem('token');
+      navigate('/login', { state: { message: "Password updated successfully! Please log in." } });
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.message || 'An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -34,34 +56,18 @@ export default function Login() {
           <h2 className="text-3xl font-bold tracking-tight text-white">MOMENTUM</h2>
         </div>
         <h2 className="mt-6 text-center text-2xl font-bold tracking-tight text-momentum-text-primary">
-          Sign in to your account
+          Set new password
         </h2>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-momentum-panel py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-momentum-border">
-          <form className="space-y-6" onSubmit={handleLogin}>
+          <form className="space-y-6" onSubmit={handleSubmit}>
             {error && <div className="text-red-500 text-sm text-center">{error}</div>}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-momentum-text-secondary">
-                Email address
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full appearance-none rounded-md border border-momentum-border bg-momentum-bg px-3 py-2 text-momentum-text-primary placeholder-momentum-text-secondary focus:border-momentum-green-bright focus:outline-none focus:ring-1 focus:ring-momentum-green-bright sm:text-sm"
-                />
-              </div>
-            </div>
-
+            
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-momentum-text-secondary">
-                Password
+                New Password
               </label>
               <div className="mt-1">
                 <input
@@ -74,13 +80,22 @@ export default function Login() {
                   className="block w-full appearance-none rounded-md border border-momentum-border bg-momentum-bg px-3 py-2 text-momentum-text-primary placeholder-momentum-text-secondary focus:border-momentum-green-bright focus:outline-none focus:ring-1 focus:ring-momentum-green-bright sm:text-sm"
                 />
               </div>
-              <div className="flex items-center justify-between mt-2">
-                <Link 
-                  to="/forgot-password" 
-                  className="text-xs text-momentum-green-bright hover:underline"
-                >
-                  Forgot password?
-                </Link>
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-momentum-text-secondary">
+                Confirm Password
+              </label>
+              <div className="mt-1">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="block w-full appearance-none rounded-md border border-momentum-border bg-momentum-bg px-3 py-2 text-momentum-text-primary placeholder-momentum-text-secondary focus:border-momentum-green-bright focus:outline-none focus:ring-1 focus:ring-momentum-green-bright sm:text-sm"
+                />
               </div>
             </div>
 
@@ -93,18 +108,11 @@ export default function Login() {
                 {isLoading ? (
                   <div className="w-5 h-5 border-2 border-momentum-bg/30 border-t-momentum-bg rounded-full animate-spin"></div>
                 ) : (
-                  'Sign in'
+                  'Reset password'
                 )}
               </button>
             </div>
           </form>
-
-          <div className="mt-6 text-center text-sm text-momentum-text-secondary">
-            Don't have an account?{' '}
-            <Link to="/register" className="font-medium text-momentum-green-bright hover:text-momentum-green-glow">
-              Get started
-            </Link>
-          </div>
         </div>
       </div>
     </div>

@@ -1,26 +1,25 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../services/auth.api';
+import { Link } from 'react-router-dom';
+import { requestPasswordReset } from '../services/auth.api';
 import { Activity } from 'lucide-react';
 
-export default function Login() {
+export default function ForgotPassword() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setMessage('');
+    setError('');
+    
     try {
-      const response = await login(email, password);
-      localStorage.setItem('token', response.data.data.session.access_token);
-      localStorage.setItem('refresh_token', response.data.data.session.refresh_token);
-      localStorage.setItem('userName', response.data.data.user?.user_metadata?.name || 'User');
-      navigate('/dashboard');
+      await requestPasswordReset(email);
+      setMessage('If an account exists with that email, a password reset link has been sent.');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.message || 'An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -34,14 +33,16 @@ export default function Login() {
           <h2 className="text-3xl font-bold tracking-tight text-white">MOMENTUM</h2>
         </div>
         <h2 className="mt-6 text-center text-2xl font-bold tracking-tight text-momentum-text-primary">
-          Sign in to your account
+          Reset your password
         </h2>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-momentum-panel py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-momentum-border">
-          <form className="space-y-6" onSubmit={handleLogin}>
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {message && <div className="text-momentum-green-bright text-sm text-center bg-momentum-green-bright/10 p-3 rounded-md">{message}</div>}
             {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+            
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-momentum-text-secondary">
                 Email address
@@ -60,31 +61,6 @@ export default function Login() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-momentum-text-secondary">
-                Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full appearance-none rounded-md border border-momentum-border bg-momentum-bg px-3 py-2 text-momentum-text-primary placeholder-momentum-text-secondary focus:border-momentum-green-bright focus:outline-none focus:ring-1 focus:ring-momentum-green-bright sm:text-sm"
-                />
-              </div>
-              <div className="flex items-center justify-between mt-2">
-                <Link 
-                  to="/forgot-password" 
-                  className="text-xs text-momentum-green-bright hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-            </div>
-
-            <div>
               <button
                 type="submit"
                 disabled={isLoading}
@@ -93,16 +69,16 @@ export default function Login() {
                 {isLoading ? (
                   <div className="w-5 h-5 border-2 border-momentum-bg/30 border-t-momentum-bg rounded-full animate-spin"></div>
                 ) : (
-                  'Sign in'
+                  'Send reset link'
                 )}
               </button>
             </div>
           </form>
 
           <div className="mt-6 text-center text-sm text-momentum-text-secondary">
-            Don't have an account?{' '}
-            <Link to="/register" className="font-medium text-momentum-green-bright hover:text-momentum-green-glow">
-              Get started
+            Remember your password?{' '}
+            <Link to="/login" className="font-medium text-momentum-green-bright hover:text-momentum-green-glow">
+              Sign in
             </Link>
           </div>
         </div>
