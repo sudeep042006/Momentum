@@ -74,6 +74,14 @@ export default function Login() {
                   className="block w-full appearance-none rounded-md border border-momentum-border bg-momentum-bg px-3 py-2 text-momentum-text-primary placeholder-momentum-text-secondary focus:border-momentum-green-bright focus:outline-none focus:ring-1 focus:ring-momentum-green-bright sm:text-sm"
                 />
               </div>
+              <div className="flex items-center justify-between mt-2">
+                <Link 
+                  to="/forgot-password" 
+                  className="text-xs text-momentum-green-bright hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
             <div>
