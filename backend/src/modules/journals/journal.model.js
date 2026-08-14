@@ -22,7 +22,11 @@ const journalSchema = new mongoose.Schema({
     isPublic: {
         type: Boolean,
         default: false
-    }
+    },
+    iv: { type: String },
+    authTag: { type: String },
+    contentIv: { type: String },
+    contentAuthTag: { type: String }
 }, {timestamps: true})
 
 const journal = mongoose.model('Journal', journalSchema);
