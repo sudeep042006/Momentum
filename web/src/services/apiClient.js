@@ -24,6 +24,21 @@ apiClient.interceptors.request.use(
 );
 
 // Add response interceptor for automatic token refreshing and failover
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -60,7 +75,20 @@ apiClient.interceptors.response.use(
     // 2. Token Refresh logic
     // If error is 401 and we haven't retried yet
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise(function(resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = 'Bearer ' + token;
+          return apiClient(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
+
       const refreshToken = localStorage.getItem('refresh_token');
       
       if (refreshToken) {
@@ -75,21 +103,30 @@ apiClient.interceptors.response.use(
             localStorage.setItem('token', newAccessToken);
             localStorage.setItem('refresh_token', newRefreshToken);
             
-            // Retry the original request with new token
+            apiClient.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            
+            processQueue(null, newAccessToken);
             return apiClient(originalRequest);
           }
         } catch (refreshError) {
           // If refresh fails, log them out
           console.error("Refresh token failed", refreshError);
+          processQueue(refreshError, null);
           localStorage.removeItem('token');
           localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user');
           window.location.href = '/login';
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
         }
       } else {
         // No refresh token available, standard logout
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
         window.location.href = '/login';
+        return Promise.reject(error);
       }
     }
     
