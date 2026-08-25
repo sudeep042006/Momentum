@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, CheckCircle, Plus, X, Calendar as CalendarIc
 import apiClient from '../services/apiClient';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import Header from '../components/layout/Header';
+import { Skeleton } from '../components/ui/Skeleton';
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -14,6 +15,7 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchMilestones = async () => {
     try {
@@ -34,7 +36,8 @@ export default function Calendar() {
 
   const handleAddMilestone = async (e) => {
     e.preventDefault();
-    if (!newTitle || !selectedDate) return;
+    if (!newTitle || !selectedDate || isSubmitting) return;
+    setIsSubmitting(true);
     
     // Format selectedDate to YYYY-MM-DD for the input
     const offset = selectedDate.getTimezoneOffset()
@@ -54,6 +57,8 @@ export default function Calendar() {
       }
     } catch (err) {
       console.error('Failed to add milestone', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -165,7 +170,21 @@ export default function Calendar() {
     return (
       <DashboardLayout>
         <Header />
-        <div className="text-momentum-text-secondary animate-pulse p-6">Loading Calendar...</div>
+        <div className="space-y-6 h-full flex flex-col pb-6 px-6 max-w-[1600px] mx-auto w-full">
+          <Skeleton className="h-[74px] w-full rounded-2xl" />
+          <div className="flex-1 bg-momentum-panel border border-momentum-border rounded-2xl p-6 flex flex-col">
+            <div className="grid grid-cols-7 gap-4 mb-4">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <Skeleton key={`h-${i}`} className="h-6 w-full" />
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-4 flex-1">
+              {Array.from({ length: 35 }).map((_, i) => (
+                <Skeleton key={`c-${i}`} className="min-h-[120px] w-full rounded-lg" />
+              ))}
+            </div>
+          </div>
+        </div>
       </DashboardLayout>
     );
   }
@@ -250,8 +269,12 @@ export default function Calendar() {
                   className="w-full bg-momentum-bg border border-momentum-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-momentum-green-bright resize-none h-24"
                 />
               </div>
-              <button type="submit" className="w-full bg-momentum-green-bright text-black font-bold px-6 py-3 rounded-xl hover:bg-momentum-green-glow transition-all">
-                Save Task
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full bg-momentum-green-bright text-black font-bold px-6 py-3 rounded-xl hover:bg-momentum-green-glow transition-all disabled:opacity-50"
+              >
+                {isSubmitting ? 'Saving...' : 'Save Task'}
               </button>
             </form>
           </div>

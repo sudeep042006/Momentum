@@ -3,6 +3,7 @@ import { Search, Plus, Book, Quote, Trash2, Edit3, X, FileText } from 'lucide-re
 import DashboardLayout from '../components/layout/DashboardLayout';
 import Header from '../components/layout/Header';
 import { getJournals, createJournal, updateJournal, deleteJournal } from '../services/journal.api';
+import { SkeletonGrid } from '../components/ui/Skeleton';
 
 export default function Journal() {
   const [journals, setJournals] = useState([]);
@@ -128,7 +129,7 @@ export default function Journal() {
 
         {/* Content Area */}
         {isLoading ? (
-          <div className="flex-1 flex items-center justify-center text-momentum-text-secondary">Loading...</div>
+          <div className="flex-1 pt-4"><SkeletonGrid count={6} /></div>
         ) : filteredJournals.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-momentum-text-secondary border-2 border-dashed border-momentum-border rounded-2xl">
             {activeTab === 'note' ? <FileText size={48} className="mb-4 opacity-50" /> : <Quote size={48} className="mb-4 opacity-50" />}

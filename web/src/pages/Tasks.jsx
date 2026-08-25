@@ -5,7 +5,7 @@ import Header from '../components/layout/Header';
 import { getTasks, createTask, updateTask, deleteTask } from '../services/task.api';
 import { CheckCircle2, Circle, Plus, Clock, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
+import { SkeletonList } from '../components/ui/Skeleton';
 const PRIORITY_COLORS = {
   high: 'text-red-400',
   medium: 'text-yellow-400',
@@ -143,8 +143,8 @@ export default function Tasks() {
 
           <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
             {isLoading ? (
-               <div className="flex justify-center py-20">
-                 <div className="w-8 h-8 border-4 border-momentum-green/20 border-t-momentum-green rounded-full animate-spin"></div>
+               <div className="py-4">
+                 <SkeletonList count={6} />
                </div>
             ) : (
               <div className="space-y-8">
