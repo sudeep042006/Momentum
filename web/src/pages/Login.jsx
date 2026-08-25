@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { login } from '../services/auth.api';
+import apiClient from '../services/apiClient';
+import { useUser } from '../context/UserContext';
 import { Activity } from 'lucide-react';
 
 export default function Login() {
@@ -9,15 +11,28 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login: loginContext } = useUser();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
       const response = await login(email, password);
-      localStorage.setItem('token', response.data.data.session.access_token);
+      const token = response.data.data.session.access_token;
+      
+      localStorage.setItem('token', token);
       localStorage.setItem('refresh_token', response.data.data.session.refresh_token);
-      localStorage.setItem('userName', response.data.data.user?.user_metadata?.name || 'User');
+      
+      // Fetch full profile immediately to avoid reload delays
+      try {
+        const meRes = await apiClient.get('/api/users/me');
+        loginContext(meRes.data.data, token);
+      } catch (err) {
+        console.error("Failed to fetch full profile during login", err);
+        // Fallback to supabase user if profile fetch fails
+        loginContext(response.data.data.user, token);
+      }
+      
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');

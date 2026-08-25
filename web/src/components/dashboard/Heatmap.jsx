@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ActivityCalendar } from 'react-activity-calendar';
 import { Tooltip } from 'react-tooltip';
 import { getHeatmap } from '../../services/daily.api';
+import { Skeleton } from '../ui/Skeleton';
 
 const HEATMAP_THEME = {
   light: ['#1e293b', '#064e3b', '#059669', '#10b981', '#22c55e', '#4ade80'],
@@ -139,8 +140,8 @@ export default function Heatmap({ completedTasksCount, totalTasksCount, heatmapD
         className="w-full overflow-x-auto pb-4"
       >
         {isInitialLoading ? (
-          <div className="h-[120px] flex items-center justify-center text-momentum-text-secondary">
-            Loading heatmap...
+          <div className="h-[120px] w-full pt-2">
+            <Skeleton className="h-[110px] w-full" />
           </div>
         ) : (
           <div className="w-max mx-auto pr-2">
