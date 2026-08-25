@@ -62,20 +62,51 @@ const Login = async (req, res) => {
     }
 }
 
+// Simple in-memory cache to prevent N+1 Supabase Auth API rate-limiting delays
+const tokenCache = new Map();
+
+// Cleanup cache periodically to avoid memory leaks (every 1 hour)
+setInterval(() => {
+    const now = Date.now();
+    for (const [token, data] of tokenCache.entries()) {
+        if (now > data.expiresAt) {
+            tokenCache.delete(token);
+        }
+    }
+}, 3600000);
+
 const authMiddleware = async (req, res, next) => {
-    try{
+    try {
         const token = req.headers.authorization?.split(' ')[1];
-        if(!token){
-            return res.status(401).json({message: "Unauthorized"});
+        if (!token) {
+            return res.status(401).json({ message: "Unauthorized" });
         }
-        const {data, error} = await supabase.auth.getUser(token);
-        if(error){
-            return res.status(401).json({message: "Unauthorized"});
+
+        // Check if token is in cache and still valid
+        const cachedUser = tokenCache.get(token);
+        if (cachedUser && Date.now() < cachedUser.expiresAt) {
+            req.user = cachedUser.user;
+            return next();
         }
+
+        // If not in cache, hit Supabase API
+        const { data, error } = await supabase.auth.getUser(token);
+        
+        if (error || !data || !data.user) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        // Cache the successful validation for 15 minutes
+        tokenCache.set(token, {
+            user: data.user,
+            expiresAt: Date.now() + 15 * 60 * 1000 // 15 mins
+        });
+
         req.user = data.user;
         next();
-    }catch(error){
-        console.log(error);
+    } catch (error) {
+        console.log("Auth Middleware Error:", error);
+        return res.status(500).json({ message: "Internal server error during authentication" });
     }
 }
 const refreshToken = async (req, res) => {
