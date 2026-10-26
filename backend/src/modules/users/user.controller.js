@@ -79,19 +79,23 @@ const getProfile = async (req, res) => {
 
 const searchUsers = async (req, res) => {
     try {
-        const query = req.query.q || '';
+        const query = (req.query.q || '').trim();
+        const currentUserId = req.user?.id;
         
-        // Escape regex characters to prevent errors
-        const escapedQuery = query.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-        // Use ^ anchor to only match names STARTING with the query
-        const regexPattern = `^${escapedQuery}`;
-        
-        const users = await UserProfile.find({
-            $or: [
-                { name: { $regex: regexPattern, $options: 'i' } }
-            ]
-        }).limit(20);
-        
+        const filter = {};
+        if (currentUserId) {
+            filter.user = { $ne: currentUserId };
+        }
+
+        if (query) {
+            const escapedQuery = query.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+            filter.$or = [
+                { name: { $regex: escapedQuery, $options: 'i' } },
+                { tagline: { $regex: escapedQuery, $options: 'i' } }
+            ];
+        }
+
+        const users = await UserProfile.find(filter).limit(25);
         res.status(200).json({ success: true, data: users });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -107,7 +111,8 @@ const getPublicProfile = async (req, res) => {
         const users = await UserProfile.find({});
         const user = users.find(u => 
             u.user === username || 
-            (u.name && u.name.toLowerCase().replace(/\\s+/g, '') === searchUsername)
+            u._id?.toString() === username ||
+            (u.name && u.name.toLowerCase().replace(/\s+/g, '') === searchUsername)
         );
 
         if (!user) {
@@ -240,4 +245,17 @@ const getMe = async (req, res) => {
     }
 };
 
-export default { createOrUpdateProfile, getProfile, searchUsers, getPublicProfile, followUser, unfollowUser, getMe };
+const uploadImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "No image file provided" });
+        }
+        const uploadResult = await uploadToCloudinary(req.file.buffer);
+        return res.status(200).json({ success: true, url: uploadResult.secure_url });
+    } catch (error) {
+        console.error("Cloudinary upload error:", error);
+        return res.status(500).json({ success: false, message: error.message || "Failed to upload image" });
+    }
+};
+
+export default { createOrUpdateProfile, getProfile, searchUsers, getPublicProfile, followUser, unfollowUser, getMe, uploadImage };

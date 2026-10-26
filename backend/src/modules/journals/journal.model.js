@@ -19,6 +19,13 @@ const journalSchema = new mongoose.Schema({
         enum: ['note', 'quote'],
         default: 'note'
     },
+    image: {
+        type: String,
+        default: ''
+    },
+    tags: [{
+        type: String
+    }],
     isPublic: {
         type: Boolean,
         default: false
