@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { DownloadCloud, Sparkles, X, ArrowUpRight } from 'lucide-react-native';
 import { downloadAndInstallUpdate, snoozeUpdateReminder } from '../services/updateService';
+import { downloadAndInstallApkDirect, addDownloadProgressListener } from '../services/systemNotificationService';
 import { colors } from '../theme/colors';
 
 export default function UpdateModal({
@@ -17,19 +18,62 @@ export default function UpdateModal({
   onClose,
 }) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadStats, setDownloadStats] = useState('');
+
+  useEffect(() => {
+    if (!visible) {
+      setIsDownloading(false);
+      setDownloadProgress(0);
+      setDownloadStats('');
+    }
+  }, [visible]);
 
   if (!visible || !updateInfo) return null;
 
   const handleUpdate = async () => {
-    if (updateInfo.downloadUrl) {
-      setIsDownloading(true);
-      await downloadAndInstallUpdate(updateInfo.downloadUrl);
-      setTimeout(() => {
-        setIsDownloading(false);
-        onClose();
-      }, 1500);
-    } else {
+    if (!updateInfo.downloadUrl) {
       onClose();
+      return;
+    }
+
+    setIsDownloading(true);
+    setDownloadProgress(2);
+
+    // 1. Listen for live download progress events from Android DownloadManager
+    let sub = null;
+    try {
+      sub = addDownloadProgressListener((data) => {
+        if (data && typeof data.progress === 'number') {
+          setDownloadProgress(data.progress);
+          if (data.bytesTotal > 0) {
+            const dl = (data.bytesDownloaded / (1024 * 1024)).toFixed(1);
+            const total = (data.bytesTotal / (1024 * 1024)).toFixed(1);
+            setDownloadStats(`${dl} MB / ${total} MB`);
+          }
+        }
+      });
+
+      const fileName = `Momentum-${updateInfo.latestVersion || 'update'}.apk`;
+      const started = await downloadAndInstallApkDirect(updateInfo.downloadUrl, fileName);
+
+      if (!started) {
+        // Fallback to browser download if native DownloadManager unavailable
+        await downloadAndInstallUpdate(updateInfo.downloadUrl);
+        setTimeout(() => {
+          setIsDownloading(false);
+          onClose();
+        }, 1500);
+      }
+    } catch (err) {
+      // Fallback
+      await downloadAndInstallUpdate(updateInfo.downloadUrl);
+      setIsDownloading(false);
+      onClose();
+    } finally {
+      if (sub && typeof sub.remove === 'function') {
+        sub.remove();
+      }
     }
   };
 
@@ -132,21 +176,56 @@ export default function UpdateModal({
             </ScrollView>
           </View>
 
+          {/* In-App Download Progress Bar (Direct In-App Install) */}
+          {isDownloading && (
+            <View className="mb-4 bg-[#080D09] border border-[#18241B] rounded-xl p-3">
+              <View className="flex-row items-center justify-between mb-2">
+                <Text
+                  allowFontScaling={false}
+                  className="text-xs font-mono font-bold text-momentum-emerald"
+                >
+                  {downloadProgress >= 100
+                    ? 'Launching Installer...'
+                    : downloadProgress > 0
+                    ? `Downloading: ${downloadProgress}%`
+                    : 'Starting download...'}
+                </Text>
+                {downloadStats ? (
+                  <Text
+                    allowFontScaling={false}
+                    className="text-[10px] font-mono text-momentum-textMuted"
+                  >
+                    {downloadStats}
+                  </Text>
+                ) : null}
+              </View>
+
+              <View className="w-full h-2.5 rounded-full bg-[#141E17] overflow-hidden">
+                <View
+                  className="h-full bg-momentum-emerald rounded-full"
+                  style={{ width: `${Math.min(100, Math.max(4, downloadProgress))}%` }}
+                />
+              </View>
+            </View>
+          )}
+
           {/* Action Buttons */}
           <TouchableOpacity
             onPress={handleUpdate}
             disabled={isDownloading}
             activeOpacity={0.8}
-            className="w-full py-3.5 rounded-xl bg-momentum-emerald flex-row items-center justify-center gap-2 mb-2.5"
+            className={`w-full py-3.5 rounded-xl flex-row items-center justify-center gap-2 mb-2.5 ${
+              isDownloading ? 'bg-[#182B1F]' : 'bg-momentum-emerald'
+            }`}
           >
             {isDownloading ? (
               <>
-                <ActivityIndicator size="small" color="#000000" />
+                <ActivityIndicator size="small" color="#00E676" />
                 <Text
                   allowFontScaling={false}
-                  className="text-sm font-bold text-black font-sans ml-1"
+                  className="text-sm font-bold text-momentum-emerald font-sans ml-1"
                 >
-                  Opening Downloader...
+                  {downloadProgress >= 100 ? 'Installing...' : `Downloading (${downloadProgress}%)`}
                 </Text>
               </>
             ) : (
@@ -164,6 +243,7 @@ export default function UpdateModal({
 
           <TouchableOpacity
             onPress={handleRemindLater}
+            disabled={isDownloading}
             activeOpacity={0.7}
             className="w-full py-2.5 items-center justify-center"
           >

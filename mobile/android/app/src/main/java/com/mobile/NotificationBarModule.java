@@ -1,13 +1,20 @@
 package com.mobile;
 
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.FileProvider;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
@@ -16,6 +23,8 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+
+import java.io.File;
 
 public class NotificationBarModule extends ReactContextBaseJavaModule {
     private static final String CHANNEL_ID = "momentum_channel_alerts";
@@ -141,6 +150,132 @@ public class NotificationBarModule extends ReactContextBaseJavaModule {
             promise.resolve(null);
         } catch (Exception e) {
             promise.resolve(null);
+        }
+    }
+
+    @ReactMethod
+    public void downloadAndInstallApk(String url, String fileName, Promise promise) {
+        try {
+            DownloadManager downloadManager = (DownloadManager) reactContext.getSystemService(Context.DOWNLOAD_SERVICE);
+            if (downloadManager == null) {
+                promise.reject("ERR_NO_DOWNLOAD_MANAGER", "DownloadManager service not available");
+                return;
+            }
+
+            Uri uri = Uri.parse(url);
+            String name = (fileName != null && !fileName.isEmpty()) ? fileName : "Momentum-Update.apk";
+            if (!name.endsWith(".apk")) {
+                name += ".apk";
+            }
+
+            File destinationFile = new File(reactContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), name);
+            if (destinationFile.exists()) {
+                destinationFile.delete();
+            }
+
+            DownloadManager.Request request = new DownloadManager.Request(uri);
+            request.setTitle("Downloading Momentum Update");
+            request.setDescription("Downloading latest build...");
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationUri(Uri.fromFile(destinationFile));
+            request.setMimeType("application/vnd.android.package-archive");
+
+            long downloadId = downloadManager.enqueue(request);
+
+            // Register completion broadcast receiver
+            BroadcastReceiver onComplete = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                    if (id == downloadId) {
+                        try {
+                            reactContext.unregisterReceiver(this);
+                        } catch (Exception e) {}
+
+                        // Launch package installer directly inside the app
+                        installApkFile(destinationFile);
+                        promise.resolve(true);
+                    }
+                }
+            };
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                reactContext.registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                reactContext.registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+            }
+
+            // Progress tracking thread
+            new Thread(() -> {
+                boolean downloading = true;
+                while (downloading) {
+                    DownloadManager.Query q = new DownloadManager.Query();
+                    q.setFilterById(downloadId);
+                    Cursor cursor = downloadManager.query(q);
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int bytesDownloadedIndex = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR);
+                        int bytesTotalIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES);
+                        int statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS);
+
+                        if (bytesDownloadedIndex != -1 && bytesTotalIndex != -1) {
+                            long bytesDownloaded = cursor.getLong(bytesDownloadedIndex);
+                            long bytesTotal = cursor.getLong(bytesTotalIndex);
+                            int status = cursor.getInt(statusIndex);
+
+                            if (status == DownloadManager.STATUS_SUCCESSFUL || status == DownloadManager.STATUS_FAILED) {
+                                downloading = false;
+                            }
+
+                            if (bytesTotal > 0) {
+                                int progress = (int) ((bytesDownloaded * 100L) / bytesTotal);
+                                WritableMap progressMap = Arguments.createMap();
+                                progressMap.putInt("progress", progress);
+                                progressMap.putDouble("bytesDownloaded", (double) bytesDownloaded);
+                                progressMap.putDouble("bytesTotal", (double) bytesTotal);
+
+                                try {
+                                    if (reactContext.hasActiveReactInstance()) {
+                                        reactContext
+                                            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                                            .emit("onDownloadProgress", progressMap);
+                                    }
+                                } catch (Exception e) {}
+                            }
+                        }
+                        cursor.close();
+                    } else {
+                        downloading = false;
+                    }
+
+                    try {
+                        Thread.sleep(300);
+                    } catch (InterruptedException e) {
+                        downloading = false;
+                    }
+                }
+            }).start();
+
+        } catch (Exception e) {
+            promise.reject("ERR_DOWNLOAD", e.getMessage());
+        }
+    }
+
+    private void installApkFile(File file) {
+        try {
+            Uri contentUri = FileProvider.getUriForFile(
+                reactContext,
+                reactContext.getPackageName() + ".provider",
+                file
+            );
+
+            Intent installIntent = new Intent(Intent.ACTION_VIEW);
+            installIntent.setDataAndType(contentUri, "application/vnd.android.package-archive");
+            installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            installIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            reactContext.startActivity(installIntent);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

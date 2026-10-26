@@ -109,3 +109,34 @@ export function cancelAllSystemNotifications() {
     NotificationBarModule.cancelAllNotifications();
   }
 }
+
+/**
+ * Direct in-app background download & installer without web browser redirection
+ */
+export async function downloadAndInstallApkDirect(url, fileName) {
+  if (Platform.OS !== 'android') return false;
+
+  if (NotificationBarModule && typeof NotificationBarModule.downloadAndInstallApk === 'function') {
+    try {
+      await NotificationBarModule.downloadAndInstallApk(url, fileName);
+      return true;
+    } catch (err) {
+      console.warn('Native downloadAndInstallApk failed:', err);
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
+ * Listens for in-app download progress (0 to 100%)
+ */
+export function addDownloadProgressListener(callback) {
+  if (Platform.OS !== 'android') return { remove: () => {} };
+
+  return DeviceEventEmitter.addListener('onDownloadProgress', (data) => {
+    if (typeof callback === 'function') {
+      callback(data);
+    }
+  });
+}
