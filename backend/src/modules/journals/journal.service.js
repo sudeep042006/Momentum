@@ -42,6 +42,11 @@ export const getJournals = async(userId) => {
     return journals.map(decryptJournal);
 };
 
+export const getJournalById = async (userId, journalId) => {
+    const journal = await Journal.findOne({ _id: journalId, user: userId });
+    return decryptJournal(journal);
+};
+
 export const updateJournal = async (userId, journalId, updateData) => {
     if (updateData.title) {
         const encryptedTitle = encrypt(updateData.title);

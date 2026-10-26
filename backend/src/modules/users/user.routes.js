@@ -15,6 +15,7 @@ router.post('/reset-password', authMiddleware, updatePassword);
 // Profile routes
 router.post('/profile', authMiddleware, upload.single('profilePic'), userController.createOrUpdateProfile);
 router.get('/profile', authMiddleware, userController.getProfile);
+router.post('/upload', authMiddleware, upload.single('image'), userController.uploadImage);
 
 // Get current authenticated user details from Supabase & MongoDB
 router.get('/me', authMiddleware, userController.getMe);

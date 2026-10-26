@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Solid Pure Black Background -->
+  <rect width="1024" height="1024" fill="#000000"/>
+  
+  <!-- Single Pure Emerald Green Heart-Rate Line (Exact App Reference) -->
+  <path
+    d="M 210 512 H 430 L 490 220 L 560 804 L 620 512 H 814"
+    fill="none"
+    stroke="#00E676"
+    stroke-width="56"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
