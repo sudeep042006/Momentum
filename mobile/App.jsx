@@ -5,6 +5,7 @@ import RootNavigator from './src/navigation/RootNavigator';
 import { AuthProvider } from './src/context/AuthContext';
 import { TaskProvider } from './src/context/TaskContext';
 import { SyncProvider } from './src/context/SyncContext';
+import { NotificationProvider } from './src/context/NotificationContext';
 import UpdateModal from './src/components/UpdateModal';
 import { checkForAppUpdate } from './src/services/updateService';
 
@@ -31,12 +32,14 @@ export default function App() {
       <AuthProvider>
         <SyncProvider>
           <TaskProvider>
-            <RootNavigator />
-            <UpdateModal
-              visible={showUpdateModal}
-              updateInfo={updateInfo}
-              onClose={() => setShowUpdateModal(false)}
-            />
+            <NotificationProvider>
+              <RootNavigator />
+              <UpdateModal
+                visible={showUpdateModal}
+                updateInfo={updateInfo}
+                onClose={() => setShowUpdateModal(false)}
+              />
+            </NotificationProvider>
           </TaskProvider>
         </SyncProvider>
       </AuthProvider>

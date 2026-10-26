@@ -4,6 +4,7 @@ import BottomTabNavigator from './BottomTabNavigator';
 import MilestonesScreen from '../screens/secondary/MilestonesScreen';
 import CommunityScreen from '../screens/secondary/CommunityScreen';
 import SettingsScreen from '../screens/secondary/SettingsScreen';
+import NotificationsScreen from '../screens/secondary/NotificationsScreen';
 import ModulePlaceholderScreen from '../screens/secondary/ModulePlaceholderScreen';
 import CustomDrawerContent from './CustomDrawerContent';
 
@@ -25,6 +26,7 @@ export default function DrawerNavigator() {
       }}
     >
       <Drawer.Screen name="MainTabs" component={BottomTabNavigator} />
+      <Drawer.Screen name="Notifications" component={NotificationsScreen} />
       <Drawer.Screen name="Milestones" component={MilestonesScreen} />
       <Drawer.Screen name="Community" component={CommunityScreen} />
       <Drawer.Screen name="Settings" component={SettingsScreen} />
