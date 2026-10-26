@@ -92,15 +92,23 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            if (file('momentum-release.keystore').exists()) {
+                storeFile file('momentum-release.keystore')
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "momentum2026pass"
+                keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "momentum"
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: "momentum2026pass"
+            } else {
+                signingConfig signingConfigs.debug
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
