@@ -37,6 +37,7 @@ export default function NotificationsScreen({ navigation }) {
     markAllAsRead,
     deleteNotification,
     clearAll,
+    addLocalNotification,
   } = useNotifications();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -46,7 +47,28 @@ export default function NotificationsScreen({ navigation }) {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchNotifications();
+    await Promise.all([
+      fetchNotifications(),
+      (async () => {
+        try {
+          const info = await checkForAppUpdate({ ignoreSnooze: true });
+          if (info && info.hasUpdate) {
+            setUpdateInfo(info);
+            const cleanVer = (info.latestVersion || '').startsWith('v')
+              ? info.latestVersion
+              : `v${info.latestVersion}`;
+            addLocalNotification({
+              title: `Momentum ${cleanVer} Available`,
+              message: 'A new release build is ready. Tap to download and install the update.',
+              type: 'update',
+              metadata: { version: info.latestVersion, downloadUrl: info.downloadUrl },
+            });
+          }
+        } catch {
+          // Non-blocking fail-safe
+        }
+      })(),
+    ]);
     setRefreshing(false);
   };
 

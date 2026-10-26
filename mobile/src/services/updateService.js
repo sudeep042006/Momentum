@@ -6,27 +6,61 @@ const GITHUB_REPO = 'sudeep042006/Momentum';
 const SNOOZE_STORAGE_KEY = 'momentum_update_snooze_until';
 
 /**
- * Snoozes the update popup and notification for the specified hours (defaults to 4 hours)
+ * Snoozes the update popup and notification for the specified version (defaults to 4 hours)
+ * @param {string} version - The version string being snoozed (e.g. 'v1.0.8')
+ * @param {number} hours - Number of hours to snooze (defaults to 4)
  */
-export async function snoozeUpdateReminder(hours = 4) {
+export async function snoozeUpdateReminder(version, hours = 4) {
   try {
-    const snoozeUntil = Date.now() + hours * 60 * 60 * 1000;
-    await localStorage.setItem(SNOOZE_STORAGE_KEY, snoozeUntil);
+    const data = {
+      snoozeUntil: Date.now() + hours * 60 * 60 * 1000,
+      version: version || 'all',
+    };
+    await localStorage.setItem(SNOOZE_STORAGE_KEY, JSON.stringify(data));
   } catch (err) {
     // Non-blocking fail-safe
   }
 }
 
 /**
- * Checks if the update reminder is currently snoozed
+ * Checks if the update reminder is currently snoozed for the given version
+ * @param {string} [targetVersion] - Optional latest version to compare against snoozed version
  */
-export async function isUpdateSnoozed() {
+export async function isUpdateSnoozed(targetVersion) {
   try {
-    const snoozeUntil = await localStorage.getItem(SNOOZE_STORAGE_KEY);
-    if (!snoozeUntil) return false;
-    const expiry = Number(snoozeUntil);
-    if (isNaN(expiry)) return false;
-    return Date.now() < expiry;
+    const raw = await localStorage.getItem(SNOOZE_STORAGE_KEY);
+    if (!raw) return false;
+
+    let snoozeUntil = 0;
+    let snoozedVersion = null;
+
+    try {
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (typeof parsed === 'object' && parsed !== null) {
+        snoozeUntil = Number(parsed.snoozeUntil) || 0;
+        snoozedVersion = parsed.version;
+      } else {
+        snoozeUntil = Number(raw) || 0;
+      }
+    } catch {
+      snoozeUntil = Number(raw) || 0;
+    }
+
+    if (Date.now() >= snoozeUntil) {
+      await clearUpdateSnooze();
+      return false;
+    }
+
+    // If a brand new version was published that is NEWER than what was snoozed,
+    // NEVER snooze it. New releases must always notify the user!
+    if (targetVersion && snoozedVersion && snoozedVersion !== 'all') {
+      if (compareVersions(targetVersion, snoozedVersion) > 0) {
+        await clearUpdateSnooze();
+        return false;
+      }
+    }
+
+    return true;
   } catch {
     return false;
   }
@@ -64,20 +98,12 @@ export function compareVersions(vA, vB) {
 /**
  * Checks GitHub Releases API for the latest published release
  * @param {{ ignoreSnooze?: boolean }} options
- * @returns {Promise<{ hasUpdate: boolean, isSnoozed?: boolean, latestVersion: string, releaseNotes: string, downloadUrl: string }|null>}
+ * @returns {Promise<{ hasUpdate: boolean, isSnoozed?: boolean, isBuilding?: boolean, latestVersion: string, releaseNotes: string, downloadUrl: string }|null>}
  */
 export async function checkForAppUpdate(options = {}) {
   if (Platform.OS !== 'android') return null;
 
   try {
-    // 1. Check if user snoozed the update reminder (3 to 4 hours)
-    if (!options.ignoreSnooze) {
-      const snoozed = await isUpdateSnoozed();
-      if (snoozed) {
-        return { hasUpdate: false, isSnoozed: true };
-      }
-    }
-
     const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
       headers: {
         Accept: 'application/vnd.github.v3+json',
@@ -93,7 +119,7 @@ export async function checkForAppUpdate(options = {}) {
     const hasNewerVersion = compareVersions(latestTag, CURRENT_APP_VERSION) > 0;
 
     if (!hasNewerVersion) {
-      return { hasUpdate: false };
+      return { hasUpdate: false, latestVersion: latestTag };
     }
 
     // STRICT CHECK: Verify that the release contains a completed .apk asset.
@@ -108,12 +134,19 @@ export async function checkForAppUpdate(options = {}) {
       return {
         hasUpdate: false,
         isBuilding: true,
+        latestVersion: latestTag,
       };
+    }
+
+    // Check if this specific version was snoozed by the user
+    let isSnoozed = false;
+    if (!options.ignoreSnooze) {
+      isSnoozed = await isUpdateSnoozed(latestTag);
     }
 
     return {
       hasUpdate: true,
-      isSnoozed: false,
+      isSnoozed,
       latestVersion: latestTag,
       currentVersion: CURRENT_APP_VERSION,
       releaseNotes: release.body || 'Performance improvements and bug fixes.',

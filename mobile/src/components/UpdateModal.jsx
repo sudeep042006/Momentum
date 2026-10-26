@@ -78,7 +78,7 @@ export default function UpdateModal({
   };
 
   const handleRemindLater = async () => {
-    await snoozeUpdateReminder(4); // Remind after 4 hours
+    await snoozeUpdateReminder(updateInfo?.latestVersion, 4); // Remind after 4 hours for this version
     onClose();
   };
 

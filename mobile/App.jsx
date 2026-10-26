@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { StatusBar } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { StatusBar, AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import RootNavigator, { navigateGlobal } from './src/navigation/RootNavigator';
 import { AuthProvider } from './src/context/AuthContext';
@@ -8,13 +8,16 @@ import { SyncProvider } from './src/context/SyncContext';
 import { NotificationProvider, useNotifications } from './src/context/NotificationContext';
 import UpdateModal from './src/components/UpdateModal';
 import { checkForAppUpdate } from './src/services/updateService';
-import { getInitialNotification, addNotificationClickListener } from './src/services/systemNotificationService';
+import {
+  getInitialNotification,
+  addNotificationClickListener,
+  requestNotificationPermission,
+} from './src/services/systemNotificationService';
 
 function AppContent() {
   const [updateInfo, setUpdateInfo] = useState(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const { addLocalNotification } = useNotifications();
-  const hasCheckedRef = useRef(false);
 
   const handleNotificationAction = async (data) => {
     if (!data || !data.actionType) return;
@@ -46,7 +49,36 @@ function AppContent() {
     }
   };
 
+  const performUpdateCheck = useCallback(async (isManual = false) => {
+    try {
+      const info = await checkForAppUpdate({ ignoreSnooze: isManual });
+      if (info && info.hasUpdate) {
+        if (!info.isSnoozed || isManual) {
+          setUpdateInfo(info);
+          setShowUpdateModal(true);
+
+          const verLabel = (info.latestVersion || '').startsWith('v')
+            ? info.latestVersion
+            : `v${info.latestVersion}`;
+
+          // Add real notification to In-App alerts AND Android status bar
+          addLocalNotification({
+            title: `Momentum ${verLabel} Available`,
+            message: 'A new release build is ready. Tap to download and install the update.',
+            type: 'update',
+            metadata: { version: info.latestVersion, downloadUrl: info.downloadUrl },
+          });
+        }
+      }
+    } catch {
+      // Non-blocking fail-safe
+    }
+  }, [addLocalNotification]);
+
   useEffect(() => {
+    // Proactively request notification permission on Android 13+
+    requestNotificationPermission();
+
     // 1. Cold start: user clicked notification while app was closed
     getInitialNotification().then((data) => {
       if (data) {
@@ -67,28 +99,29 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    if (hasCheckedRef.current) return;
-    hasCheckedRef.current = true;
+    // Initial check shortly after app launch
+    const timer = setTimeout(() => {
+      performUpdateCheck(false);
+    }, 2000);
 
-    // Check for updates shortly after app launch
-    const timer = setTimeout(async () => {
-      const info = await checkForAppUpdate();
-      if (info && info.hasUpdate && !info.isSnoozed) {
-        setUpdateInfo(info);
-        setShowUpdateModal(true);
+    // Periodic check every 3 minutes (catches new builds finished in GitHub Actions)
+    const interval = setInterval(() => {
+      performUpdateCheck(false);
+    }, 3 * 60 * 1000);
 
-        // Add real notification to In-App alerts AND Android status bar
-        addLocalNotification({
-          title: `Mommenttum v${info.latestVersion} Available`,
-          message: 'A new release build is ready. Tap to download and install the update.',
-          type: 'update',
-          metadata: { version: info.latestVersion, downloadUrl: info.downloadUrl },
-        });
+    // Re-check whenever user returns from background to foreground
+    const appStateSub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        performUpdateCheck(false);
       }
-    }, 2500);
+    });
 
-    return () => clearTimeout(timer);
-  }, [addLocalNotification]);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+      appStateSub.remove();
+    };
+  }, [performUpdateCheck]);
 
   return (
     <>
