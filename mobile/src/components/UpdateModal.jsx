@@ -7,7 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { DownloadCloud, Sparkles, X, ArrowUpRight } from 'lucide-react-native';
-import { downloadAndInstallUpdate } from '../services/updateService';
+import { downloadAndInstallUpdate, snoozeUpdateReminder } from '../services/updateService';
 import { colors } from '../theme/colors';
 
 export default function UpdateModal({
@@ -24,13 +24,18 @@ export default function UpdateModal({
     onClose();
   };
 
+  const handleRemindLater = async () => {
+    await snoozeUpdateReminder(4); // Remind after 4 hours
+    onClose();
+  };
+
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={onClose}
+      onRequestClose={handleRemindLater}
     >
       <View
         style={{
@@ -62,7 +67,7 @@ export default function UpdateModal({
               <DownloadCloud size={22} color={colors.emerald.bright} />
             </View>
             <TouchableOpacity
-              onPress={onClose}
+              onPress={handleRemindLater}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               className="w-8 h-8 rounded-full bg-momentum-surface border border-momentum-border items-center justify-center"
             >
@@ -134,7 +139,7 @@ export default function UpdateModal({
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={onClose}
+            onPress={handleRemindLater}
             activeOpacity={0.7}
             className="w-full py-2.5 items-center justify-center"
           >
@@ -142,7 +147,7 @@ export default function UpdateModal({
               allowFontScaling={false}
               className="text-xs font-semibold text-momentum-textMuted"
             >
-              Remind Me Later
+              Remind Me Later (in 4 hours)
             </Text>
           </TouchableOpacity>
         </View>

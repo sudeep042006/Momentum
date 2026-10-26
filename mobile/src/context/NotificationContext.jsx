@@ -4,6 +4,10 @@ import { cacheManager } from '../storage/cacheManager';
 import { networkMonitor } from '../sync/networkMonitor';
 import { showSystemNotification } from '../services/systemNotificationService';
 
+import { localStorage } from '../storage/localStorage';
+
+const NOTIFIED_IDS_KEY = 'momentum_shown_system_notifs';
+
 const NotificationContext = createContext({
   notifications: [],
   unreadCount: 0,
@@ -21,6 +25,32 @@ export function NotificationProvider({ children }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const notifiedIdsRef = useRef(new Set());
+
+  // Load already posted notification IDs from storage on launch
+  useEffect(() => {
+    (async () => {
+      try {
+        const stored = await localStorage.getItem(NOTIFIED_IDS_KEY);
+        if (Array.isArray(stored)) {
+          stored.forEach((id) => notifiedIdsRef.current.add(id));
+        }
+      } catch (e) {
+        // Safe fallback
+      }
+    })();
+  }, []);
+
+  const recordNotifiedId = async (id) => {
+    if (!id) return;
+    notifiedIdsRef.current.add(id);
+    try {
+      const arr = Array.from(notifiedIdsRef.current);
+      if (arr.length > 80) arr.splice(0, arr.length - 80);
+      await localStorage.setItem(NOTIFIED_IDS_KEY, arr);
+    } catch (e) {
+      // Safe fallback
+    }
+  };
 
   // Recalculate unread count helper
   const calculateUnread = (list) => {
@@ -50,11 +80,11 @@ export function NotificationProvider({ children }) {
           setUnreadCount(count);
           await cacheManager.setNotifications(serverList);
 
-          // Post unread alerts to Android notification bar
+          // Post unread alerts to Android notification bar ONLY ONCE
           serverList.forEach((n) => {
             const notifId = n._id || n.id;
-            if (!n.isRead && !notifiedIdsRef.current.has(notifId)) {
-              notifiedIdsRef.current.add(notifId);
+            if (!n.isRead && notifId && !notifiedIdsRef.current.has(notifId)) {
+              recordNotifiedId(notifId);
               showSystemNotification(n.title, n.message);
             }
           });
@@ -71,15 +101,16 @@ export function NotificationProvider({ children }) {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  const markAsRead = async (id) => {
+  const markAsRead = useCallback(async (id) => {
     try {
-      // Optimistic update
-      const updated = notifications.map((n) =>
-        (n._id === id || n.id === id) ? { ...n, isRead: true } : n
-      );
-      setNotifications(updated);
-      setUnreadCount(calculateUnread(updated));
-      await cacheManager.setNotifications(updated);
+      setNotifications((prev) => {
+        const updated = prev.map((n) =>
+          (n._id === id || n.id === id) ? { ...n, isRead: true } : n
+        );
+        setUnreadCount(calculateUnread(updated));
+        cacheManager.setNotifications(updated);
+        return updated;
+      });
 
       const isOnline = await networkMonitor.checkConnection();
       if (isOnline) {
@@ -88,15 +119,16 @@ export function NotificationProvider({ children }) {
     } catch (err) {
       // Handled gracefully
     }
-  };
+  }, []);
 
-  const markAllAsRead = async () => {
+  const markAllAsRead = useCallback(async () => {
     try {
-      // Optimistic update
-      const updated = notifications.map((n) => ({ ...n, isRead: true }));
-      setNotifications(updated);
-      setUnreadCount(0);
-      await cacheManager.setNotifications(updated);
+      setNotifications((prev) => {
+        const updated = prev.map((n) => ({ ...n, isRead: true }));
+        setUnreadCount(0);
+        cacheManager.setNotifications(updated);
+        return updated;
+      });
 
       const isOnline = await networkMonitor.checkConnection();
       if (isOnline) {
@@ -105,14 +137,16 @@ export function NotificationProvider({ children }) {
     } catch (err) {
       // Handled gracefully
     }
-  };
+  }, []);
 
-  const deleteNotification = async (id) => {
+  const deleteNotification = useCallback(async (id) => {
     try {
-      const updated = notifications.filter((n) => n._id !== id && n.id !== id);
-      setNotifications(updated);
-      setUnreadCount(calculateUnread(updated));
-      await cacheManager.setNotifications(updated);
+      setNotifications((prev) => {
+        const updated = prev.filter((n) => n._id !== id && n.id !== id);
+        setUnreadCount(calculateUnread(updated));
+        cacheManager.setNotifications(updated);
+        return updated;
+      });
 
       const isOnline = await networkMonitor.checkConnection();
       if (isOnline) {
@@ -121,9 +155,9 @@ export function NotificationProvider({ children }) {
     } catch (err) {
       // Handled gracefully
     }
-  };
+  }, []);
 
-  const clearAll = async () => {
+  const clearAll = useCallback(async () => {
     try {
       setNotifications([]);
       setUnreadCount(0);
@@ -136,9 +170,9 @@ export function NotificationProvider({ children }) {
     } catch (err) {
       // Handled gracefully
     }
-  };
+  }, []);
 
-  const addLocalNotification = async ({ title, message, type = 'system', metadata = {} }) => {
+  const addLocalNotification = useCallback(async ({ title, message, type = 'system', metadata = {} }) => {
     try {
       const newNotif = {
         _id: 'local_' + Date.now(),
@@ -149,13 +183,26 @@ export function NotificationProvider({ children }) {
         metadata,
         createdAt: new Date().toISOString(),
       };
-      const updated = [newNotif, ...notifications];
-      setNotifications(updated);
-      setUnreadCount(calculateUnread(updated));
-      await cacheManager.setNotifications(updated);
 
-      // Post directly to Android status / notification bar
-      showSystemNotification(title, message);
+      let shouldShowSystem = true;
+      setNotifications((prev) => {
+        // Prevent duplicate alerts with same title and type
+        const exists = prev.some((n) => n.title === title && n.type === type);
+        if (exists) {
+          shouldShowSystem = false;
+          return prev;
+        }
+        const updated = [newNotif, ...prev];
+        setUnreadCount(calculateUnread(updated));
+        cacheManager.setNotifications(updated);
+        return updated;
+      });
+
+      // Post directly to Android status / notification bar ONLY if newly added
+      if (shouldShowSystem) {
+        recordNotifiedId(newNotif._id);
+        showSystemNotification(title, message);
+      }
 
       const isOnline = await networkMonitor.checkConnection();
       if (isOnline) {
@@ -164,7 +211,7 @@ export function NotificationProvider({ children }) {
     } catch (err) {
       // Handled gracefully
     }
-  };
+  }, []);
 
   return (
     <NotificationContext.Provider
