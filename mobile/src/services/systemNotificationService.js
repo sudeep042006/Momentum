@@ -1,4 +1,4 @@
-import { NativeModules, Platform, PermissionsAndroid } from 'react-native';
+import { NativeModules, Platform, PermissionsAndroid, DeviceEventEmitter } from 'react-native';
 
 const { NotificationBarModule } = NativeModules;
 
@@ -18,7 +18,21 @@ export async function requestNotificationPermission() {
   }
 }
 
-export async function showSystemNotification(title, message, id = Math.floor(Math.random() * 100000)) {
+/**
+ * Posts an alert to Android's top system notification bar.
+ * @param {string} title
+ * @param {string} message
+ * @param {number} id
+ * @param {string} actionType - 'UPDATE' | 'MILESTONES' | 'TASKS' | 'NOTIFICATIONS'
+ * @param {object} payload - Extra metadata passed when tapped
+ */
+export async function showSystemNotification(
+  title,
+  message,
+  id = Math.floor(Math.random() * 100000),
+  actionType = 'NOTIFICATIONS',
+  payload = {}
+) {
   if (Platform.OS !== 'android') return;
 
   try {
@@ -26,11 +40,62 @@ export async function showSystemNotification(title, message, id = Math.floor(Mat
     if (!hasPermission) return;
 
     if (NotificationBarModule && typeof NotificationBarModule.showNotification === 'function') {
-      NotificationBarModule.showNotification(title, message, id);
+      const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload || {});
+      NotificationBarModule.showNotification(
+        title,
+        message,
+        id,
+        actionType || 'NOTIFICATIONS',
+        payloadStr
+      );
     }
   } catch (err) {
     // Non-blocking fail-safe
   }
+}
+
+/**
+ * Checks if the app was opened by tapping a notification while closed/killed (Cold Start)
+ */
+export async function getInitialNotification() {
+  if (Platform.OS !== 'android' || !NotificationBarModule?.getInitialNotification) {
+    return null;
+  }
+  try {
+    const data = await NotificationBarModule.getInitialNotification();
+    if (data && data.payload) {
+      try {
+        data.payload = JSON.parse(data.payload);
+      } catch (e) {
+        // Keep as string
+      }
+    }
+    return data;
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * Listens for notification bar clicks while app is in background or running (Warm Start)
+ */
+export function addNotificationClickListener(callback) {
+  if (Platform.OS !== 'android') return { remove: () => {} };
+
+  const subscription = DeviceEventEmitter.addListener('onNotificationClicked', (data) => {
+    if (data && data.payload && typeof data.payload === 'string') {
+      try {
+        data.payload = JSON.parse(data.payload);
+      } catch (e) {
+        // Keep as string
+      }
+    }
+    if (typeof callback === 'function') {
+      callback(data);
+    }
+  });
+
+  return subscription;
 }
 
 export function cancelSystemNotification(id) {

@@ -85,7 +85,14 @@ export function NotificationProvider({ children }) {
             const notifId = n._id || n.id;
             if (!n.isRead && notifId && !notifiedIdsRef.current.has(notifId)) {
               recordNotifiedId(notifId);
-              showSystemNotification(n.title, n.message);
+              const actionType = n.type === 'milestone'
+                ? 'MILESTONES'
+                : n.type === 'task' || n.type === 'streak'
+                ? 'TASKS'
+                : n.type === 'update'
+                ? 'UPDATE'
+                : 'NOTIFICATIONS';
+              showSystemNotification(n.title, n.message, undefined, actionType, n.metadata || {});
             }
           });
         }
@@ -201,7 +208,14 @@ export function NotificationProvider({ children }) {
       // Post directly to Android status / notification bar ONLY if newly added
       if (shouldShowSystem) {
         recordNotifiedId(newNotif._id);
-        showSystemNotification(title, message);
+        const actionType = type === 'milestone'
+          ? 'MILESTONES'
+          : type === 'task' || type === 'streak'
+          ? 'TASKS'
+          : type === 'update'
+          ? 'UPDATE'
+          : 'NOTIFICATIONS';
+        showSystemNotification(title, message, undefined, actionType, metadata || {});
       }
 
       const isOnline = await networkMonitor.checkConnection();
