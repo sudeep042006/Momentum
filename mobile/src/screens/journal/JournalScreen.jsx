@@ -35,18 +35,37 @@ function JournalScreen({ navigation }) {
 
   const loadJournals = async () => {
     try {
-      const cached = await cacheManager.getJournals();
-      if (cached && Array.isArray(cached)) setJournals(cached);
+      const cached = (await cacheManager.getJournals()) || [];
+      if (Array.isArray(cached) && cached.length > 0) {
+        setJournals(cached);
+      }
 
       const isOnline = await networkMonitor.checkConnection();
       if (isOnline) {
         const res = await journalApi.getJournals();
         const serverData = res.data?.data || [];
-        setJournals(serverData);
-        await cacheManager.setJournals(serverData);
+
+        // Smart reconciliation:
+        // 1. Keep pending local notes that haven't synced yet (e.g. _id starts with local_)
+        // 2. If a cached note has an image and the server version returned empty image, preserve the cached image!
+        const localPending = cached.filter((c) => c._id && c._id.startsWith('local_'));
+        const mergedServer = serverData.map((serverItem) => {
+          const cachedMatch = cached.find((c) => c._id === serverItem._id);
+          if (cachedMatch && cachedMatch.image && !serverItem.image) {
+            return { ...serverItem, image: cachedMatch.image };
+          }
+          return serverItem;
+        });
+
+        const merged = [
+          ...localPending,
+          ...mergedServer.filter((s) => !localPending.some((l) => l._id === s._id)),
+        ];
+        setJournals(merged);
+        await cacheManager.setJournals(merged);
       }
-    } catch {
-      // Keep cached if offline
+    } catch (err) {
+      console.warn('Error loading journals:', err?.message);
     }
   };
 
@@ -140,6 +159,9 @@ function JournalScreen({ navigation }) {
           const res = await journalApi.createJournal(finalData);
           if (res.data?.data) {
             const serverEntry = res.data.data;
+            if (!serverEntry.image && finalData.image) {
+              serverEntry.image = finalData.image;
+            }
             const reconciled = updated.map((j) => (j._id === tempId ? serverEntry : j));
             setJournals(reconciled);
             await cacheManager.setJournals(reconciled);

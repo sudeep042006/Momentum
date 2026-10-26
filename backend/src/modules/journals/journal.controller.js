@@ -1,5 +1,18 @@
 import * as journalService from './journal.service.js';
-import { uploadToCloudinary } from '../../utils/cloudinary.js';
+import cloudinary from '../../config/cloudinary.js';
+
+const uploadToCloudinary = (buffer) => {
+    return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+            { folder: 'momentum_journals' },
+            (error, result) => {
+                if (error) return reject(error);
+                resolve(result);
+            }
+        );
+        uploadStream.end(buffer);
+    });
+};
 
 const createJournal = async (req, res) => {
     try {
