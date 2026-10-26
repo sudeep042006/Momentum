@@ -179,8 +179,17 @@ export function NotificationProvider({ children }) {
     }
   }, []);
 
+  const notificationsRef = useRef([]);
+  notificationsRef.current = notifications;
+
   const addLocalNotification = useCallback(async ({ title, message, type = 'system', metadata = {} }) => {
     try {
+      const currentList = notificationsRef.current || [];
+      const exactExists = currentList.some((n) => n.title === title && n.type === type);
+      if (exactExists) {
+        return; // Avoid duplicate alerts
+      }
+
       const newNotif = {
         _id: 'local_' + Date.now(),
         title,
@@ -191,32 +200,28 @@ export function NotificationProvider({ children }) {
         createdAt: new Date().toISOString(),
       };
 
-      let shouldShowSystem = true;
       setNotifications((prev) => {
-        // Prevent duplicate alerts with same title and type
-        const exists = prev.some((n) => n.title === title && n.type === type);
-        if (exists) {
-          shouldShowSystem = false;
-          return prev;
+        // For 'update' alerts, replace older version update notifications with the latest one
+        let filtered = prev;
+        if (type === 'update') {
+          filtered = prev.filter((n) => n.type !== 'update');
         }
-        const updated = [newNotif, ...prev];
+        const updated = [newNotif, ...filtered];
         setUnreadCount(calculateUnread(updated));
         cacheManager.setNotifications(updated);
         return updated;
       });
 
-      // Post directly to Android status / notification bar ONLY if newly added
-      if (shouldShowSystem) {
-        recordNotifiedId(newNotif._id);
-        const actionType = type === 'milestone'
-          ? 'MILESTONES'
-          : type === 'task' || type === 'streak'
-          ? 'TASKS'
-          : type === 'update'
-          ? 'UPDATE'
-          : 'NOTIFICATIONS';
-        showSystemNotification(title, message, undefined, actionType, metadata || {});
-      }
+      // Post directly to Android status / notification bar
+      recordNotifiedId(newNotif._id);
+      const actionType = type === 'milestone'
+        ? 'MILESTONES'
+        : type === 'task' || type === 'streak'
+        ? 'TASKS'
+        : type === 'update'
+        ? 'UPDATE'
+        : 'NOTIFICATIONS';
+      showSystemNotification(title, message, undefined, actionType, metadata || {});
 
       const isOnline = await networkMonitor.checkConnection();
       if (isOnline) {
