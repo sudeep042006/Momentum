@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   Modal,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { DownloadCloud, Sparkles, X, ArrowUpRight } from 'lucide-react-native';
 import { downloadAndInstallUpdate, snoozeUpdateReminder } from '../services/updateService';
@@ -15,13 +16,21 @@ export default function UpdateModal({
   updateInfo,
   onClose,
 }) {
+  const [isDownloading, setIsDownloading] = useState(false);
+
   if (!visible || !updateInfo) return null;
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (updateInfo.downloadUrl) {
-      downloadAndInstallUpdate(updateInfo.downloadUrl);
+      setIsDownloading(true);
+      await downloadAndInstallUpdate(updateInfo.downloadUrl);
+      setTimeout(() => {
+        setIsDownloading(false);
+        onClose();
+      }, 1500);
+    } else {
+      onClose();
     }
-    onClose();
   };
 
   const handleRemindLater = async () => {
@@ -126,16 +135,31 @@ export default function UpdateModal({
           {/* Action Buttons */}
           <TouchableOpacity
             onPress={handleUpdate}
+            disabled={isDownloading}
             activeOpacity={0.8}
             className="w-full py-3.5 rounded-xl bg-momentum-emerald flex-row items-center justify-center gap-2 mb-2.5"
           >
-            <Text
-              allowFontScaling={false}
-              className="text-sm font-bold text-black font-sans"
-            >
-              Install Update
-            </Text>
-            <ArrowUpRight size={16} color="#000000" strokeWidth={2.5} />
+            {isDownloading ? (
+              <>
+                <ActivityIndicator size="small" color="#000000" />
+                <Text
+                  allowFontScaling={false}
+                  className="text-sm font-bold text-black font-sans ml-1"
+                >
+                  Opening Downloader...
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text
+                  allowFontScaling={false}
+                  className="text-sm font-bold text-black font-sans"
+                >
+                  Install Update
+                </Text>
+                <ArrowUpRight size={16} color="#000000" strokeWidth={2.5} />
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity

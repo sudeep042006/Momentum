@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import AppHeader from '../../components/AppHeader';
 import SyncStatusBar from '../../components/SyncStatusBar';
+import UpdateModal from '../../components/UpdateModal';
+import { checkForAppUpdate } from '../../services/updateService';
 import { useNotifications } from '../../context/NotificationContext';
 import {
   Bell,
@@ -21,6 +23,7 @@ import {
   Info,
   Clock,
   X,
+  ChevronRight,
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 
@@ -38,11 +41,40 @@ export default function NotificationsScreen({ navigation }) {
 
   const [refreshing, setRefreshing] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchNotifications();
     setRefreshing(false);
+  };
+
+  const handleNotificationPress = async (item) => {
+    if (!item.isRead) {
+      markAsRead(item._id || item.id);
+    }
+
+    if (item.type === 'update') {
+      // User tapped update alert -> open the Update Modal!
+      const info = await checkForAppUpdate({ ignoreSnooze: true });
+      if (info && info.hasUpdate) {
+        setUpdateInfo(info);
+      } else if (item.metadata?.downloadUrl) {
+        setUpdateInfo({
+          hasUpdate: true,
+          latestVersion: item.metadata.version || 'Latest',
+          currentVersion: 'v1.0.0',
+          releaseNotes: item.message || 'Performance improvements and bug fixes.',
+          downloadUrl: item.metadata.downloadUrl,
+        });
+      }
+      setShowUpdateModal(true);
+    } else if (item.type === 'milestone') {
+      navigation?.navigate?.('Milestones');
+    } else if (item.type === 'task' || item.type === 'streak') {
+      navigation?.navigate?.('MainTabs', { screen: 'Home' });
+    }
   };
 
   const formatTimestamp = (dateStr) => {
@@ -91,11 +123,7 @@ export default function NotificationsScreen({ navigation }) {
     return (
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={() => {
-          if (isUnread) {
-            markAsRead(item._id || item.id);
-          }
-        }}
+        onPress={() => handleNotificationPress(item)}
         className={`mb-3 p-4 rounded-xl border ${
           isUnread
             ? 'bg-[#0E1611] border-[#00E676]/40'
@@ -293,6 +321,13 @@ export default function NotificationsScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+
+      {/* In-App Update Modal for Update Alerts */}
+      <UpdateModal
+        visible={showUpdateModal}
+        updateInfo={updateInfo}
+        onClose={() => setShowUpdateModal(false)}
+      />
     </View>
   );
 }
