@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import apiClient from './apiClient';
 
 /**
- * Uploads a local image file to Cloudinary via backend /api/users/upload
+ * Uploads a local image file to Cloudinary via backend authenticated endpoints
  * @param {string} uri - Local file uri (file:// or content://)
  * @param {string} [fileName] - Optional file name
  * @param {string} [mimeType] - Optional mime type
@@ -15,29 +15,41 @@ export async function uploadImageFile(uri, fileName, mimeType) {
     return uri;
   }
 
+  const cleanUri = Platform.OS === 'android' ? uri : uri.replace('file://', '');
+  const extension = cleanUri.split('.').pop()?.toLowerCase() || 'jpg';
+  const name = fileName || `note_${Date.now()}.${extension}`;
+  const type = mimeType || (extension === 'png' ? 'image/png' : 'image/jpeg');
+
   const formData = new FormData();
   formData.append('image', {
-    uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
-    name: fileName || `image_${Date.now()}.jpg`,
-    type: mimeType || 'image/jpeg',
+    uri: cleanUri,
+    name,
+    type,
   });
 
   try {
     const res = await apiClient.post('/api/journals/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 35000,
+      headers: {
+        'Accept': 'application/json',
+      },
+      transformRequest: (data) => data,
+      timeout: 45000,
     });
-    if (res.data?.url) return res.data.url;
+    if (res.data?.url) {
+      return res.data.url;
+    }
   } catch (err) {
-    // Fallback to /api/users/upload
     try {
       const res = await apiClient.post('/api/users/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 35000,
+        headers: {
+          'Accept': 'application/json',
+        },
+        transformRequest: (data) => data,
+        timeout: 45000,
       });
-      return res.data?.url || null;
+      if (res.data?.url) return res.data.url;
     } catch (fallbackErr) {
-      console.warn('Both journal and user image upload failed:', fallbackErr?.message);
+      console.warn('Image upload failed:', fallbackErr?.response?.data || fallbackErr?.message);
       return null;
     }
   }
