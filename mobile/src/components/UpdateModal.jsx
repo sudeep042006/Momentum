@@ -109,7 +109,7 @@ export default function UpdateModal({
                 allowFontScaling={false}
                 className="text-xs font-mono text-momentum-textMuted"
               >
-                (Installed: {updateInfo.currentVersion})
+                (Current: {updateInfo.currentVersion}){updateInfo.apkSize ? ` • ${updateInfo.apkSize}` : ''}
               </Text>
             </View>
           </View>

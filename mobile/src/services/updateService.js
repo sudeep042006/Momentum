@@ -90,21 +90,35 @@ export async function checkForAppUpdate(options = {}) {
 
     const release = await response.json();
     const latestTag = release.tag_name || '';
-    const hasUpdate = compareVersions(latestTag, CURRENT_APP_VERSION) > 0;
+    const hasNewerVersion = compareVersions(latestTag, CURRENT_APP_VERSION) > 0;
 
-    // Find the APK file from release assets
+    if (!hasNewerVersion) {
+      return { hasUpdate: false };
+    }
+
+    // STRICT CHECK: Verify that the release contains a completed .apk asset.
+    // When code is pushed, GitHub Actions takes 10-25 mins to build the APK.
+    // If the APK asset is not yet uploaded, DO NOT notify the user prematurely!
     const apkAsset = (release.assets || []).find(
-      (asset) => asset.name && asset.name.endsWith('.apk')
+      (asset) => asset.name && asset.name.endsWith('.apk') && asset.browser_download_url
     );
-    const downloadUrl = apkAsset?.browser_download_url || release.html_url;
+
+    if (!apkAsset) {
+      // Build is still running in GitHub Actions; wait until APK is ready
+      return {
+        hasUpdate: false,
+        isBuilding: true,
+      };
+    }
 
     return {
-      hasUpdate,
+      hasUpdate: true,
       isSnoozed: false,
       latestVersion: latestTag,
       currentVersion: CURRENT_APP_VERSION,
       releaseNotes: release.body || 'Performance improvements and bug fixes.',
-      downloadUrl,
+      downloadUrl: apkAsset.browser_download_url,
+      apkSize: apkAsset.size ? (apkAsset.size / (1024 * 1024)).toFixed(1) + ' MB' : null,
     };
   } catch (error) {
     console.log('Update check failed (offline or network):', error?.message);
@@ -118,11 +132,17 @@ export async function checkForAppUpdate(options = {}) {
 export async function downloadAndInstallUpdate(downloadUrl) {
   if (!downloadUrl) return;
   try {
-    const canOpen = await Linking.canOpenURL(downloadUrl);
-    if (canOpen) {
-      await Linking.openURL(downloadUrl);
-    }
+    // Direct open to trigger Android browser / download manager
+    await Linking.openURL(downloadUrl);
   } catch (err) {
-    console.warn('Failed to open update URL:', err);
+    console.warn('Direct openURL failed, attempting fallback:', err);
+    try {
+      const canOpen = await Linking.canOpenURL(downloadUrl);
+      if (canOpen) {
+        await Linking.openURL(downloadUrl);
+      }
+    } catch (fallbackErr) {
+      console.error('All Linking attempts failed:', fallbackErr);
+    }
   }
 }
