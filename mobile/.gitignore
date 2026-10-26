@@ -30,6 +30,7 @@ android/**/*.iml
 # Android Keystores (keep debug keystore only)
 *.keystore
 *.jks
+*keystore_base64.txt
 !android/app/debug.keystore
 
 # Android Binary Outputs (do not commit multi-megabyte APK/AABs)
