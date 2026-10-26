@@ -19,13 +19,23 @@ import {
   LogOut,
   ChevronRight,
   X,
+  Bell,
 } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
+import { useNotifications } from '../context/NotificationContext';
 import { colors } from '../theme/colors';
 
 export default function CustomDrawerContent({ navigation, state }) {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
+  
+  let unreadCount = 0;
+  try {
+    const notifContext = useNotifications();
+    unreadCount = notifContext?.unreadCount || 0;
+  } catch {
+    unreadCount = 0;
+  }
 
   const name = user?.name || user?.user_metadata?.name || 'Sudeep Kuralkar';
   const handle = user?.username || user?.user_metadata?.username || '@sudeepkuralkar';
@@ -331,18 +341,7 @@ export default function CustomDrawerContent({ navigation, state }) {
               Milestones
             </Text>
           </View>
-          <View className="flex-row items-center gap-1.5">
-            <View className="px-2 py-0.5 rounded-md bg-[#162019]">
-              <Text
-                numberOfLines={1}
-                allowFontScaling={false}
-                className="text-[8.5px] font-mono text-momentum-textMuted"
-              >
-                Coming Soon
-              </Text>
-            </View>
-            <ChevronRight size={14} color={colors.text.muted} />
-          </View>
+          <ChevronRight size={14} color={colors.text.muted} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -419,6 +418,35 @@ export default function CustomDrawerContent({ navigation, state }) {
         >
           Settings & Support
         </Text>
+
+        <TouchableOpacity
+          onPress={() => navigateToScreen('Notifications')}
+          className="flex-row items-center justify-between px-3 py-2.5 rounded-xl mb-1"
+        >
+          <View className="flex-row items-center gap-3 flex-1 mr-2">
+            <Bell size={16} color={colors.text.secondary} />
+            <Text
+              numberOfLines={1}
+              allowFontScaling={false}
+              className="text-xs text-momentum-textSecondary flex-1"
+            >
+              Notifications
+            </Text>
+          </View>
+          {unreadCount > 0 ? (
+            <View className="px-2 py-0.5 rounded-md bg-[#00E676]/20 border border-[#00E676]/40">
+              <Text
+                numberOfLines={1}
+                allowFontScaling={false}
+                className="text-[9px] font-mono font-bold text-[#00E676]"
+              >
+                {unreadCount} NEW
+              </Text>
+            </View>
+          ) : (
+            <ChevronRight size={14} color={colors.text.muted} />
+          )}
+        </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => navigateToScreen('Settings')}

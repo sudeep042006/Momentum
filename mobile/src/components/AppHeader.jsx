@@ -4,11 +4,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Menu, Bell, ArrowLeft } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 import { colors } from '../theme/colors';
 
-export default function AppHeader({ navigation, title, onProfilePress }) {
+export default function AppHeader({ navigation, title, onProfilePress, onNotificationPress }) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  
+  let unreadCount = 0;
+  try {
+    const notifContext = useNotifications();
+    unreadCount = notifContext?.unreadCount || 0;
+  } catch {
+    unreadCount = 0;
+  }
 
   const name = user?.name || user?.user_metadata?.name || 'Sudeep';
   const profilePic = user?.profilePic || user?.user_metadata?.profilePic;
@@ -87,12 +96,25 @@ export default function AppHeader({ navigation, title, onProfilePress }) {
         {/* Right: Notifications Bell + Avatar */}
         <View className="flex-row items-center gap-3">
           <TouchableOpacity
+            onPress={() => {
+              if (typeof onNotificationPress === 'function') {
+                onNotificationPress();
+              } else {
+                navigation?.navigate?.('Notifications');
+              }
+            }}
             activeOpacity={0.7}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             className="relative p-1"
           >
             <Bell size={20} color="#FFFFFF" strokeWidth={2} />
-            <View className="absolute top-1 right-1 w-2 h-2 rounded-full bg-momentum-emerald border border-momentum-bg" />
+            {unreadCount > 0 && (
+              <View className="absolute -top-1 -right-1 min-w-[17px] h-[17px] rounded-full bg-momentum-emerald items-center justify-center px-1 border border-[#060806]">
+                <Text className="text-[9.5px] font-black text-black leading-none">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity

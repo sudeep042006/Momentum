@@ -11,6 +11,7 @@ const KEYS = {
   SCHEDULE: 'cached_schedule',
   BADGES: 'cached_badges',
   MILESTONES: 'cached_milestones',
+  NOTIFICATIONS: 'cached_notifications',
 };
 
 export const cacheManager = {
@@ -52,4 +53,8 @@ export const cacheManager = {
   // Milestones
   getMilestones: () => localStorage.getItem(KEYS.MILESTONES),
   setMilestones: (data) => localStorage.setItem(KEYS.MILESTONES, data),
+
+  // Notifications
+  getNotifications: () => localStorage.getItem(KEYS.NOTIFICATIONS),
+  setNotifications: (data) => localStorage.setItem(KEYS.NOTIFICATIONS, data),
 };

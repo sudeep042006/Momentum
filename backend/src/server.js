@@ -11,6 +11,7 @@ import badgeRoutes from './modules/badges/badge.routes.js';
 import scheduleRoutes from './modules/schedules/schedule.routes.js';
 import journalRoutes from './modules/journals/journal.routes.js';   
 import milestoneRoutes from './modules/milestones/milestone.routes.js';
+import notificationRoutes from './modules/notifications/notification.routes.js';
 import http from 'http';
 import { initSocket } from './config/socket.js';
 
@@ -37,6 +38,7 @@ app.use('/api/badges', badgeRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/journals', journalRoutes);
 app.use('/api/milestones', milestoneRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello from Momentum Backend!');
