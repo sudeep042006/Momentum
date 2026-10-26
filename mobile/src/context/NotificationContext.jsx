@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { notificationApi } from '../api/notificationApi';
 import { cacheManager } from '../storage/cacheManager';
 import { networkMonitor } from '../sync/networkMonitor';
+import { showSystemNotification } from '../services/systemNotificationService';
 
 const NotificationContext = createContext({
   notifications: [],
@@ -19,6 +20,7 @@ export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const notifiedIdsRef = useRef(new Set());
 
   // Recalculate unread count helper
   const calculateUnread = (list) => {
@@ -47,6 +49,15 @@ export function NotificationProvider({ children }) {
             : calculateUnread(serverList);
           setUnreadCount(count);
           await cacheManager.setNotifications(serverList);
+
+          // Post unread alerts to Android notification bar
+          serverList.forEach((n) => {
+            const notifId = n._id || n.id;
+            if (!n.isRead && !notifiedIdsRef.current.has(notifId)) {
+              notifiedIdsRef.current.add(notifId);
+              showSystemNotification(n.title, n.message);
+            }
+          });
         }
       }
     } catch (err) {
@@ -142,6 +153,9 @@ export function NotificationProvider({ children }) {
       setNotifications(updated);
       setUnreadCount(calculateUnread(updated));
       await cacheManager.setNotifications(updated);
+
+      // Post directly to Android status / notification bar
+      showSystemNotification(title, message);
 
       const isOnline = await networkMonitor.checkConnection();
       if (isOnline) {
