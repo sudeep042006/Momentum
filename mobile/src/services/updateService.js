@@ -1,7 +1,47 @@
 import { Linking, Platform } from 'react-native';
+import { localStorage } from '../storage/localStorage';
 
 export const CURRENT_APP_VERSION = 'v1.0.0';
 const GITHUB_REPO = 'sudeep042006/Momentum';
+const SNOOZE_STORAGE_KEY = 'momentum_update_snooze_until';
+
+/**
+ * Snoozes the update popup and notification for the specified hours (defaults to 4 hours)
+ */
+export async function snoozeUpdateReminder(hours = 4) {
+  try {
+    const snoozeUntil = Date.now() + hours * 60 * 60 * 1000;
+    await localStorage.setItem(SNOOZE_STORAGE_KEY, snoozeUntil);
+  } catch (err) {
+    // Non-blocking fail-safe
+  }
+}
+
+/**
+ * Checks if the update reminder is currently snoozed
+ */
+export async function isUpdateSnoozed() {
+  try {
+    const snoozeUntil = await localStorage.getItem(SNOOZE_STORAGE_KEY);
+    if (!snoozeUntil) return false;
+    const expiry = Number(snoozeUntil);
+    if (isNaN(expiry)) return false;
+    return Date.now() < expiry;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Clears the snooze state so update prompts can fire immediately (e.g. on manual check)
+ */
+export async function clearUpdateSnooze() {
+  try {
+    await localStorage.removeItem(SNOOZE_STORAGE_KEY);
+  } catch (err) {
+    // Non-blocking fail-safe
+  }
+}
 
 /**
  * Compares two semantic version strings (e.g. 'v1.0.1' vs 'v1.0.0')
@@ -23,12 +63,21 @@ export function compareVersions(vA, vB) {
 
 /**
  * Checks GitHub Releases API for the latest published release
- * @returns {Promise<{ hasUpdate: boolean, latestVersion: string, releaseNotes: string, downloadUrl: string }|null>}
+ * @param {{ ignoreSnooze?: boolean }} options
+ * @returns {Promise<{ hasUpdate: boolean, isSnoozed?: boolean, latestVersion: string, releaseNotes: string, downloadUrl: string }|null>}
  */
-export async function checkForAppUpdate() {
+export async function checkForAppUpdate(options = {}) {
   if (Platform.OS !== 'android') return null;
 
   try {
+    // 1. Check if user snoozed the update reminder (3 to 4 hours)
+    if (!options.ignoreSnooze) {
+      const snoozed = await isUpdateSnoozed();
+      if (snoozed) {
+        return { hasUpdate: false, isSnoozed: true };
+      }
+    }
+
     const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
       headers: {
         Accept: 'application/vnd.github.v3+json',
@@ -51,6 +100,7 @@ export async function checkForAppUpdate() {
 
     return {
       hasUpdate,
+      isSnoozed: false,
       latestVersion: latestTag,
       currentVersion: CURRENT_APP_VERSION,
       releaseNotes: release.body || 'Performance improvements and bug fixes.',

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -13,12 +13,16 @@ function AppContent() {
   const [updateInfo, setUpdateInfo] = useState(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const { addLocalNotification } = useNotifications();
+  const hasCheckedRef = useRef(false);
 
   useEffect(() => {
+    if (hasCheckedRef.current) return;
+    hasCheckedRef.current = true;
+
     // Check for updates shortly after app launch
     const timer = setTimeout(async () => {
       const info = await checkForAppUpdate();
-      if (info && info.hasUpdate) {
+      if (info && info.hasUpdate && !info.isSnoozed) {
         setUpdateInfo(info);
         setShowUpdateModal(true);
 
