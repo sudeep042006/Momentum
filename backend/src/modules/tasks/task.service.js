@@ -22,6 +22,10 @@ const decryptTask = (task) => {
             console.error("Failed to decrypt task", taskObj._id);
         }
     }
+    // Sanitize any corrupt or double-encrypted raw hex strings
+    if (typeof taskObj.title === 'string' && /^[0-9a-fA-F]{24,}$/.test(taskObj.title.trim())) {
+        taskObj.title = "Schedule Task";
+    }
     return taskObj;
 };
 
@@ -52,14 +56,13 @@ const createTask = async (userId, taskData) => {
 };
 
 const getTasks = async (userId, date) => {
-    // Check for auto-sync if asking for today
-    if (date === getTodayString()) {
-        const dailyList = await getDailyList(userId, date);
-        if (!dailyList.hasSyncedSchedule) {
-            await scheduleService.syncScheduleTasks(userId, date);
-            dailyList.hasSyncedSchedule = true;
-            await dailyList.save();
-        }
+    const targetDate = date || getTodayString();
+
+    // Auto-sync schedule blocks with addToDailyList enabled
+    try {
+        await scheduleService.syncScheduleTasks(userId, targetDate);
+    } catch (syncErr) {
+        console.error("Auto schedule sync failed during getTasks:", syncErr?.message);
     }
 
     const query = { user: userId };

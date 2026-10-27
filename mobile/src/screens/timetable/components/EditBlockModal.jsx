@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -76,7 +76,7 @@ export default function EditBlockModal({ visible, initialData = null, onClose, o
         >
           <TouchableOpacity
             activeOpacity={1}
-            className="bg-momentum-card border-t border-momentum-borderLight rounded-t-3xl p-6 pb-8"
+            className="bg-[#000000] border-t-2 border-momentum-emerald rounded-t-3xl p-6 pb-8"
           >
             {/* Header */}
             <View className="flex-row items-center justify-between mb-4">
@@ -143,7 +143,7 @@ export default function EditBlockModal({ visible, initialData = null, onClose, o
                       onPress={() => setCategory(cat.value)}
                       className={`px-3 py-1.5 rounded-lg border transition-all ${
                         isSelected
-                          ? 'bg-[#0D241C] border-momentum-emerald'
+                          ? 'bg-[#000000] border-momentum-emerald'
                           : 'bg-momentum-surface border-momentum-border'
                       }`}
                     >

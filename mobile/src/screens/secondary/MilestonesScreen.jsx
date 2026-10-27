@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -279,7 +279,7 @@ export default function MilestonesScreen({ navigation }) {
               </View>
 
               {/* Progress Track */}
-              <View className="w-full h-2 rounded-full bg-[#111713] overflow-hidden">
+              <View className="w-full h-2 rounded-full bg-[#000000] overflow-hidden">
                 <View
                   style={{ width: `${progressPct}%` }}
                   className="h-full bg-momentum-emerald rounded-full"
@@ -315,7 +315,7 @@ export default function MilestonesScreen({ navigation }) {
                   {selectedDateStr && (
                     <TouchableOpacity
                       onPress={() => setSelectedDateStr(null)}
-                      className="px-2 py-1 rounded-lg bg-[#0D241C] border border-[#15422B]"
+                      className="px-2 py-1 rounded-lg bg-[#000000] border border-[#15422B]"
                     >
                       <Text
                         numberOfLines={1}
@@ -381,9 +381,9 @@ export default function MilestonesScreen({ navigation }) {
                           isSelected
                             ? 'bg-momentum-emerald'
                             : isToday
-                            ? 'border border-momentum-emerald bg-[#0D241C]'
+                            ? 'border border-momentum-emerald bg-[#000000]'
                             : hasMilestone
-                            ? 'bg-[#0D241C] border border-[#1B472A]'
+                            ? 'bg-[#000000] border border-[#1B472A]'
                             : 'bg-transparent'
                         }`}
                       >
@@ -462,7 +462,7 @@ export default function MilestonesScreen({ navigation }) {
                       width: 20,
                       height: 20,
                       borderRadius: 6,
-                      backgroundColor: isDone ? colors.emerald.bright : '#090D0A',
+                      backgroundColor: isDone ? colors.emerald.bright : '#000000',
                       borderWidth: isDone ? 0 : 1.2,
                       borderColor: '#243629',
                       alignItems: 'center',
@@ -485,7 +485,7 @@ export default function MilestonesScreen({ navigation }) {
 
                     {/* Metadata: Category pill + Target date + Days left */}
                     <View className="flex-row items-center gap-2 mt-2 flex-wrap">
-                      <View className="px-2 py-0.5 rounded-md bg-[#0D241C]">
+                      <View className="px-2 py-0.5 rounded-md bg-[#000000]">
                         <Text
                           allowFontScaling={false}
                           className="text-[9px] font-mono font-bold text-momentum-emerald uppercase"
@@ -534,7 +534,7 @@ export default function MilestonesScreen({ navigation }) {
         }}
         ListEmptyComponent={
           <View className="items-center justify-center py-12 px-6 rounded-2xl bg-momentum-card border border-momentum-border/60 mt-2">
-            <View className="w-12 h-12 rounded-2xl bg-[#0D241C] border border-[#1B472A] items-center justify-center mb-3">
+            <View className="w-12 h-12 rounded-2xl bg-[#000000] border border-[#1B472A] items-center justify-center mb-3">
               <Target size={22} color={colors.emerald.bright} />
             </View>
             <Text
@@ -574,7 +574,7 @@ export default function MilestonesScreen({ navigation }) {
           >
             <TouchableOpacity
               activeOpacity={1}
-              className="bg-momentum-card border-t border-momentum-borderLight rounded-t-3xl p-6 pb-8"
+              className="bg-[#000000] border-t-2 border-momentum-emerald rounded-t-3xl p-6 pb-8"
             >
               <View className="flex-row items-center justify-between mb-4">
                 <Text

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text } from 'react-native';
 import { useSync } from '../context/SyncContext';
 import { WifiOff, RefreshCw } from 'lucide-react-native';
@@ -16,7 +16,7 @@ export default function SyncStatusBar() {
       className={`flex-row items-center justify-center py-1.5 px-3 border-b ${
         !isOnline
           ? 'bg-[#151206] border-[#382b08]'
-          : 'bg-[#06170d] border-[#0e3b1f]'
+          : 'bg-[#000000] border-[#0e3b1f]'
       }`}
     >
       {!isOnline ? (

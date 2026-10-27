@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -173,7 +173,7 @@ export default function JournalEntryModal({
         >
           <TouchableOpacity
             activeOpacity={1}
-            className="bg-momentum-card border-t border-momentum-borderLight rounded-t-3xl p-6 pb-8 max-h-[85%]"
+            className="bg-[#000000] border-t-2 border-momentum-emerald rounded-t-3xl p-6 pb-8 max-h-[85%]"
           >
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Header */}
@@ -200,7 +200,7 @@ export default function JournalEntryModal({
                   activeOpacity={0.8}
                   className={`flex-1 py-2.5 rounded-xl border flex-row items-center justify-center gap-2 ${
                     type === 'note'
-                      ? 'bg-[#0D241C] border-momentum-emerald'
+                      ? 'bg-[#000000] border-momentum-emerald'
                       : 'bg-momentum-surface border-momentum-border'
                   }`}
                 >
@@ -223,7 +223,7 @@ export default function JournalEntryModal({
                   activeOpacity={0.8}
                   className={`flex-1 py-2.5 rounded-xl border flex-row items-center justify-center gap-2 ${
                     type === 'quote'
-                      ? 'bg-[#0D241C] border-momentum-emerald'
+                      ? 'bg-[#000000] border-momentum-emerald'
                       : 'bg-momentum-surface border-momentum-border'
                   }`}
                 >
@@ -275,7 +275,7 @@ export default function JournalEntryModal({
               {/* Image Attachment Section */}
               <View className="mb-4">
                 {imageUri ? (
-                  <View className="relative rounded-2xl overflow-hidden border border-momentum-border mb-2 bg-[#060806]">
+                  <View className="relative rounded-2xl overflow-hidden border border-momentum-border mb-2 bg-[#000000]">
                     <Image source={{ uri: imageUri }} className="w-full h-36" resizeMode="cover" />
                     {isUploading ? (
                       <View className="absolute inset-0 bg-black/70 items-center justify-center flex-row gap-2">

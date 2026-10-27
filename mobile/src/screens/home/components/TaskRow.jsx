@@ -5,15 +5,15 @@ import { colors } from '../../../theme/colors';
 import { formatTime12h } from '../../../utils/timeUtils';
 
 const CATEGORY_STYLES = {
-  development: { bg: '#0D241C', text: '#00E676' },
-  backend: { bg: '#0D241C', text: '#00E676' },
+  development: { bg: '#000000', text: '#00E676' },
+  backend: { bg: '#000000', text: '#00E676' },
   practice: { bg: '#0C2338', text: '#38BDF8' },
   academic: { bg: '#0C2338', text: '#38BDF8' },
   learning: { bg: '#271438', text: '#C084FC' },
   personal: { bg: '#33220A', text: '#F59E0B' },
   planning: { bg: '#33220A', text: '#F59E0B' },
-  health: { bg: '#0D241C', text: '#00E676' },
-  work: { bg: '#0D241C', text: '#00E676' },
+  health: { bg: '#000000', text: '#00E676' },
+  work: { bg: '#000000', text: '#00E676' },
 };
 
 export default function TaskRow({ task, onToggle, onDelete }) {
@@ -34,7 +34,7 @@ export default function TaskRow({ task, onToggle, onDelete }) {
             width: 22,
             height: 22,
             borderRadius: 6,
-            backgroundColor: isCompleted ? colors.emerald.bright : '#090D0A',
+            backgroundColor: isCompleted ? colors.emerald.bright : '#000000',
             borderWidth: isCompleted ? 0 : 1.2,
             borderColor: '#243629',
             alignItems: 'center',
@@ -53,7 +53,9 @@ export default function TaskRow({ task, onToggle, onDelete }) {
             }`}
             numberOfLines={2}
           >
-            {task.title}
+            {typeof task.title === 'string' && /^[0-9a-fA-F]{24,}$/.test(task.title.trim())
+              ? 'Schedule Task'
+              : (task.title || 'Task')}
           </Text>
 
           <View className="flex-row items-center gap-2 mt-1.5 flex-wrap">

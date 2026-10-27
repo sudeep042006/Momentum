@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, TouchableOpacity, Image, Platform, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Menu, Bell, ArrowLeft } from 'lucide-react-native';
@@ -109,7 +109,7 @@ export default function AppHeader({ navigation, title, onProfilePress, onNotific
           >
             <Bell size={20} color="#FFFFFF" strokeWidth={2} />
             {unreadCount > 0 && (
-              <View className="absolute -top-1 -right-1 min-w-[17px] h-[17px] rounded-full bg-momentum-emerald items-center justify-center px-1 border border-[#060806]">
+              <View className="absolute -top-1 -right-1 min-w-[17px] h-[17px] rounded-full bg-momentum-emerald items-center justify-center px-1 border border-[#000000]">
                 <Text className="text-[9.5px] font-black text-black leading-none">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </Text>
@@ -126,7 +126,7 @@ export default function AppHeader({ navigation, title, onProfilePress, onNotific
               }
             }}
             activeOpacity={0.8}
-            className="w-8 h-8 rounded-full overflow-hidden border border-[#243629] items-center justify-center bg-[#0D241C]"
+            className="w-8 h-8 rounded-full overflow-hidden border border-[#243629] items-center justify-center bg-[#000000]"
           >
             {profilePic ? (
               <Image source={{ uri: profilePic }} className="w-full h-full" resizeMode="cover" />

@@ -76,21 +76,21 @@ export default function JournalDetailModal({
           style={{
             width: '100%',
             maxHeight: '90%',
-            backgroundColor: '#0D120F',
+            backgroundColor: '#000000',
             borderRadius: 24,
-            borderColor: '#1E2E22',
-            borderWidth: 1.2,
+            borderColor: '#00E676',
+            borderWidth: 1.5,
             shadowColor: '#00E676',
-            shadowOpacity: 0.12,
-            shadowRadius: 18,
-            elevation: 10,
+            shadowOpacity: 0.18,
+            shadowRadius: 22,
+            elevation: 12,
             overflow: 'hidden',
           }}
         >
           {/* Top Action Bar */}
-          <View className="flex-row items-center justify-between px-5 py-4 border-b border-momentum-border bg-[#0B0F0C]">
+          <View className="flex-row items-center justify-between px-5 py-4 border-b border-momentum-border bg-[#000000]">
             <View className="flex-row items-center gap-2.5">
-              <View className="w-8 h-8 rounded-xl bg-[#0D241C] border border-[#15422B] items-center justify-center">
+              <View className="w-8 h-8 rounded-xl bg-[#000000] border border-[#15422B] items-center justify-center">
                 {isQuote ? (
                   <Quote size={15} color={colors.emerald.bright} />
                 ) : (
@@ -184,7 +184,7 @@ export default function JournalDetailModal({
 
             {/* Optional Attached Image */}
             {item.image ? (
-              <View className="mb-4 rounded-2xl overflow-hidden border border-momentum-border bg-[#060806]">
+              <View className="mb-4 rounded-2xl overflow-hidden border border-momentum-border bg-[#000000]">
                 <Image
                   source={{ uri: item.image }}
                   className="w-full h-56"
@@ -197,7 +197,7 @@ export default function JournalDetailModal({
             <View
               className={`p-4 rounded-2xl mb-4 ${
                 isQuote
-                  ? 'bg-[#0B150F] border-l-4 border-momentum-emerald'
+                  ? 'bg-[#000000] border-l-4 border-momentum-emerald'
                   : 'bg-momentum-surface/80 border border-momentum-border'
               }`}
             >
@@ -230,7 +230,7 @@ export default function JournalDetailModal({
                   {tags.map((tag, idx) => (
                     <View
                       key={idx}
-                      className="px-3 py-1 rounded-lg bg-[#0D241C] border border-[#15422B]"
+                      className="px-3 py-1 rounded-lg bg-[#000000] border border-[#15422B]"
                     >
                       <Text
                         allowFontScaling={false}

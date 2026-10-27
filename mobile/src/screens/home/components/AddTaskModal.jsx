@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,24 +13,26 @@ import { X, Plus, Clock } from 'lucide-react-native';
 import { colors } from '../../../theme/colors';
 
 const CATEGORIES = [
-  { label: 'DEVELOPMENT', value: 'development' },
-  { label: 'PRACTICE', value: 'practice' },
-  { label: 'LEARNING', value: 'learning' },
-  { label: 'BACKEND', value: 'backend' },
-  { label: 'PLANNING', value: 'planning' },
-  { label: 'HEALTH', value: 'health' },
+  { label: 'WORK', value: 'work' },
+  { label: 'DEVELOPMENT', value: 'development', apiCategory: 'work' },
+  { label: 'PRACTICE', value: 'practice', apiCategory: 'learning' },
+  { label: 'LEARNING', value: 'learning', apiCategory: 'learning' },
+  { label: 'PERSONAL', value: 'personal', apiCategory: 'personal' },
+  { label: 'HEALTH', value: 'health', apiCategory: 'health' },
 ];
 
 export default function AddTaskModal({ visible, onClose, onAdd }) {
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('development');
+  const [category, setCategory] = useState('work');
   const [startTime, setStartTime] = useState('');
 
   const handleSubmit = () => {
     if (!title.trim()) return;
+    const selectedCat = CATEGORIES.find((c) => c.value === category);
     onAdd({
       title: title.trim(),
-      category,
+      category: selectedCat?.apiCategory || category,
+      displayCategory: category,
       priority: 'medium',
       startTime: startTime.trim() || null,
     });
@@ -51,15 +53,16 @@ export default function AddTaskModal({ visible, onClose, onAdd }) {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={onClose}
-          className="flex-1 bg-black/80 justify-end"
-        >
+        <View className="flex-1 justify-end">
+          {/* Backdrop Overlay (tapping dismisses) */}
           <TouchableOpacity
             activeOpacity={1}
-            className="bg-momentum-card border-t border-momentum-borderLight rounded-t-3xl p-6 pb-8"
-          >
+            onPress={onClose}
+            className="absolute inset-0 bg-black/80"
+          />
+
+          {/* Modal Content Card */}
+          <View className="bg-[#000000] border-t-2 border-momentum-emerald rounded-t-3xl p-6 pb-8">
             {/* Header */}
             <View className="flex-row items-center justify-between mb-4">
               <Text className="text-base font-bold text-white tracking-tight">
@@ -81,6 +84,8 @@ export default function AddTaskModal({ visible, onClose, onAdd }) {
               placeholder="e.g. Implement Redis caching"
               placeholderTextColor={colors.text.muted}
               autoFocus
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
               className="bg-momentum-input border border-momentum-border rounded-xl px-4 py-3.5 text-sm text-white mb-4"
             />
 
@@ -98,7 +103,7 @@ export default function AddTaskModal({ visible, onClose, onAdd }) {
                       onPress={() => setCategory(cat.value)}
                       className={`px-3 py-1.5 rounded-lg border transition-all ${
                         isSelected
-                          ? 'bg-[#0D241C] border-momentum-emerald'
+                          ? 'bg-[#000000] border-momentum-emerald'
                           : 'bg-momentum-surface border-momentum-border'
                       }`}
                     >
@@ -140,12 +145,12 @@ export default function AddTaskModal({ visible, onClose, onAdd }) {
               }`}
             >
               <Plus size={16} color="#000000" strokeWidth={3} />
-              <Text className="text-sm font-bold text-black">
+              <Text className="text-sm font-bold text-black font-sans">
                 Add Task
               </Text>
             </TouchableOpacity>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </View>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );

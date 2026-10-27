@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -59,7 +59,7 @@ export default function EditProfileModal({ visible, user, onClose, onSave }) {
         >
           <TouchableOpacity
             activeOpacity={1}
-            className="bg-momentum-card border-t border-momentum-borderLight rounded-t-3xl p-6 pb-8"
+            className="bg-[#000000] border-t-2 border-momentum-emerald rounded-t-3xl p-6 pb-8"
           >
             {/* Header */}
             <View className="flex-row items-center justify-between mb-4">

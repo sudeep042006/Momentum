@@ -25,12 +25,16 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.io.File;
+import android.provider.Settings;
 
 public class NotificationBarModule extends ReactContextBaseJavaModule {
     private static final String CHANNEL_ID = "momentum_channel_alerts";
     private static final String CHANNEL_NAME = "Momentum Alerts";
     private static NotificationBarModule instance;
     private final ReactApplicationContext reactContext;
+    private long currentDownloadId = -1;
+    private BroadcastReceiver downloadReceiver = null;
+    private volatile boolean isDownloadingApk = false;
 
     public NotificationBarModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -162,6 +166,14 @@ public class NotificationBarModule extends ReactContextBaseJavaModule {
                 return;
             }
 
+            // Cleanup any existing active download listener
+            if (downloadReceiver != null) {
+                try {
+                    reactContext.unregisterReceiver(downloadReceiver);
+                } catch (Exception ignored) {}
+                downloadReceiver = null;
+            }
+
             Uri uri = Uri.parse(url);
             String name = (fileName != null && !fileName.isEmpty()) ? fileName : "Momentum-Update.apk";
             if (!name.endsWith(".apk")) {
@@ -181,6 +193,8 @@ public class NotificationBarModule extends ReactContextBaseJavaModule {
             request.setMimeType("application/vnd.android.package-archive");
 
             long downloadId = downloadManager.enqueue(request);
+            currentDownloadId = downloadId;
+            isDownloadingApk = true;
 
             // Register completion broadcast receiver
             BroadcastReceiver onComplete = new BroadcastReceiver() {
@@ -191,6 +205,21 @@ public class NotificationBarModule extends ReactContextBaseJavaModule {
                         try {
                             reactContext.unregisterReceiver(this);
                         } catch (Exception e) {}
+                        downloadReceiver = null;
+                        currentDownloadId = -1;
+                        isDownloadingApk = false;
+
+                        // Notify JS that download finished
+                        WritableMap doneMap = Arguments.createMap();
+                        doneMap.putInt("progress", 100);
+                        doneMap.putString("status", "download_complete");
+                        try {
+                            if (reactContext.hasActiveReactInstance()) {
+                                reactContext
+                                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                                    .emit("onDownloadProgress", doneMap);
+                            }
+                        } catch (Exception ignored) {}
 
                         // Launch package installer directly inside the app
                         installApkFile(destinationFile);
@@ -198,6 +227,7 @@ public class NotificationBarModule extends ReactContextBaseJavaModule {
                     }
                 }
             };
+            downloadReceiver = onComplete;
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 reactContext.registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_NOT_EXPORTED);
@@ -207,8 +237,7 @@ public class NotificationBarModule extends ReactContextBaseJavaModule {
 
             // Progress tracking thread
             new Thread(() -> {
-                boolean downloading = true;
-                while (downloading) {
+                while (isDownloadingApk) {
                     DownloadManager.Query q = new DownloadManager.Query();
                     q.setFilterById(downloadId);
                     Cursor cursor = downloadManager.query(q);
@@ -223,7 +252,7 @@ public class NotificationBarModule extends ReactContextBaseJavaModule {
                             int status = cursor.getInt(statusIndex);
 
                             if (status == DownloadManager.STATUS_SUCCESSFUL || status == DownloadManager.STATUS_FAILED) {
-                                downloading = false;
+                                isDownloadingApk = false;
                             }
 
                             if (bytesTotal > 0) {
@@ -244,24 +273,64 @@ public class NotificationBarModule extends ReactContextBaseJavaModule {
                         }
                         cursor.close();
                     } else {
-                        downloading = false;
+                        isDownloadingApk = false;
                     }
 
                     try {
                         Thread.sleep(300);
                     } catch (InterruptedException e) {
-                        downloading = false;
+                        isDownloadingApk = false;
                     }
                 }
             }).start();
 
         } catch (Exception e) {
+            isDownloadingApk = false;
+            currentDownloadId = -1;
             promise.reject("ERR_DOWNLOAD", e.getMessage());
+        }
+    }
+
+    @ReactMethod
+    public void cancelApkDownload(Promise promise) {
+        try {
+            isDownloadingApk = false;
+            if (currentDownloadId != -1) {
+                DownloadManager downloadManager = (DownloadManager) reactContext.getSystemService(Context.DOWNLOAD_SERVICE);
+                if (downloadManager != null) {
+                    downloadManager.remove(currentDownloadId);
+                }
+                currentDownloadId = -1;
+            }
+            if (downloadReceiver != null) {
+                try {
+                    reactContext.unregisterReceiver(downloadReceiver);
+                } catch (Exception ignored) {}
+                downloadReceiver = null;
+            }
+            promise.resolve(true);
+        } catch (Exception e) {
+            promise.reject("ERR_CANCEL_DOWNLOAD", e.getMessage());
         }
     }
 
     private void installApkFile(File file) {
         try {
+            if (file == null || !file.exists()) {
+                return;
+            }
+
+            // On Android 8.0+ (Oreo), check if app is permitted to install unknown apps
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (!reactContext.getPackageManager().canRequestPackageInstalls()) {
+                    Intent permissionIntent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
+                    permissionIntent.setData(Uri.parse("package:" + reactContext.getPackageName()));
+                    permissionIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    reactContext.startActivity(permissionIntent);
+                    return;
+                }
+            }
+
             Uri contentUri = FileProvider.getUriForFile(
                 reactContext,
                 reactContext.getPackageName() + ".provider",

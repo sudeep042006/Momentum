@@ -129,6 +129,24 @@ export async function downloadAndInstallApkDirect(url, fileName) {
 }
 
 /**
+ * Cancels active in-app APK download
+ */
+export async function cancelApkDownloadDirect() {
+  if (Platform.OS !== 'android') return false;
+
+  if (NotificationBarModule && typeof NotificationBarModule.cancelApkDownload === 'function') {
+    try {
+      await NotificationBarModule.cancelApkDownload();
+      return true;
+    } catch (err) {
+      console.warn('Native cancelApkDownload failed:', err);
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
  * Listens for in-app download progress (0 to 100%)
  */
 export function addDownloadProgressListener(callback) {

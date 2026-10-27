@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Edit3, MapPin, Calendar, Camera } from 'lucide-react-native';
 import { colors } from '../../../theme/colors';
@@ -26,7 +26,7 @@ export default function ProfileHeader({ user, onEdit }) {
         <View className="flex-row items-center gap-3.5 flex-1 mr-2">
           {/* Avatar with Camera Badge */}
           <View className="relative">
-            <View className="w-16 h-16 rounded-full bg-[#0D241C] border-2 border-[#1B3624] items-center justify-center overflow-hidden">
+            <View className="w-16 h-16 rounded-full bg-[#000000] border-2 border-[#1B3624] items-center justify-center overflow-hidden">
               {profilePic ? (
                 <Image source={{ uri: profilePic }} className="w-full h-full" resizeMode="cover" />
               ) : (
@@ -58,7 +58,7 @@ export default function ProfileHeader({ user, onEdit }) {
         <TouchableOpacity
           onPress={onEdit}
           activeOpacity={0.8}
-          className="flex-row items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-momentum-emerald bg-[#09150D]"
+          className="flex-row items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-momentum-emerald bg-[#000000]"
         >
           <Edit3 size={12} color={colors.emerald.bright} />
           <Text className="text-[11px] font-bold text-momentum-emerald">

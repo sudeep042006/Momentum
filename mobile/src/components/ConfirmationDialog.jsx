@@ -14,7 +14,7 @@ export default function ConfirmationDialog({
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View className="flex-1 bg-black/80 items-center justify-center p-6">
-        <View className="w-full max-w-sm bg-momentum-card border border-momentum-border rounded-2xl p-5">
+        <View className="w-full max-w-sm bg-[#000000] border border-momentum-emerald rounded-2xl p-5">
           <Text className="text-base font-bold text-momentum-textPrimary mb-1.5">
             {title}
           </Text>

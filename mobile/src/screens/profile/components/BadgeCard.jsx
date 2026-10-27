@@ -1,14 +1,14 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text } from 'react-native';
 import { Flame, Code, Database, BookOpen, Mountain, Lock } from 'lucide-react-native';
 
 const BADGE_CONFIG = {
-  streak: { icon: Flame, color: '#00E676', bg: '#0D241C', border: '#1B472A' },
+  streak: { icon: Flame, color: '#00E676', bg: '#000000', border: '#1B472A' },
   dsa: { icon: Code, color: '#38BDF8', bg: '#0C2338', border: '#133857' },
   backend: { icon: Database, color: '#818CF8', bg: '#1A1B3A', border: '#2C2D5A' },
-  knowledge: { icon: BookOpen, color: '#10B981', bg: '#0D261C', border: '#15402D' },
+  knowledge: { icon: BookOpen, color: '#10B981', bg: '#000000', border: '#15402D' },
   consistency: { icon: Mountain, color: '#F59E0B', bg: '#33220A', border: '#523610' },
-  lock: { icon: Lock, color: '#526056', bg: '#111713', border: '#1A241D' },
+  lock: { icon: Lock, color: '#526056', bg: '#000000', border: '#1A241D' },
 };
 
 export default function BadgeCard({ type = 'streak', title, subtitle }) {

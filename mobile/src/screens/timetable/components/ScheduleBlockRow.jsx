@@ -11,6 +11,7 @@ import {
   BookOpen,
   Calendar,
   MoreHorizontal,
+  CheckSquare,
 } from 'lucide-react-native';
 import { colors } from '../../../theme/colors';
 
@@ -24,7 +25,7 @@ function getActivityMeta(title = '', category = '') {
       icon: Dumbbell,
       accent: '#00E676',
       badge: 'HEALTH',
-      badgeBg: '#0D241C',
+      badgeBg: '#000000',
       badgeText: '#00E676',
     };
   }
@@ -96,7 +97,7 @@ function getActivityMeta(title = '', category = '') {
     icon: Calendar,
     accent: '#00E676',
     badge: 'ROUTINE',
-    badgeBg: '#0D241C',
+    badgeBg: '#000000',
     badgeText: '#00E676',
   };
 }
@@ -176,7 +177,9 @@ export default function ScheduleBlockRow({ block, isCurrentTime = false, onEdit,
           {/* Title and Time Range */}
           <View className="flex-1">
             <Text className="text-xs font-bold text-white tracking-tight" numberOfLines={1}>
-              {block.title}
+              {typeof block.title === 'string' && /^[0-9a-fA-F]{24,}$/.test(block.title.trim())
+                ? 'Free Slot'
+                : (block.title || 'Free Slot')}
             </Text>
             <Text className="text-[10px] font-mono text-momentum-textSecondary mt-0.5">
               {startFormatted} – {endFormatted}
@@ -185,7 +188,16 @@ export default function ScheduleBlockRow({ block, isCurrentTime = false, onEdit,
         </View>
 
         {/* Right Badge and More Button */}
-        <View className="flex-row items-center gap-2">
+        <View className="flex-row items-center gap-1.5">
+          {Boolean(block.addToDailyList) && (
+            <View className="px-1.5 py-0.5 rounded-md bg-[#00E676]/15 border border-[#00E676]/40 flex-row items-center gap-0.5">
+              <CheckSquare size={9} color="#00E676" />
+              <Text className="text-[8.5px] font-mono font-bold text-[#00E676]">
+                DAILY
+              </Text>
+            </View>
+          )}
+
           <View
             className="px-2 py-0.5 rounded-md"
             style={{ backgroundColor: meta.badgeBg }}

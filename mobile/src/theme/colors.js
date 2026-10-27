@@ -3,11 +3,11 @@
  * True black background, subtle greys, and purposeful emerald green
  */
 export const colors = {
-  background: '#060806',
-  surface: '#0B0F0C',
-  card: '#0D120F',
-  cardElevated: '#111713',
-  input: '#090D0A',
+  background: '#000000',
+  surface: '#000000',
+  card: '#000000',
+  cardElevated: '#000000',
+  input: '#000000',
   border: '#18241B',
   borderLight: '#243629',
   
@@ -29,7 +29,7 @@ export const colors = {
   
   // Contribution Heatmap Levels (0 to 5)
   heatmap: {
-    level0: '#111713', // 0%
+    level0: '#000000', // 0% - pure black on AMOLED
     level1: '#0d381e', // 1-25%
     level2: '#086634', // 26-50%
     level3: '#009e4d', // 51-75%
@@ -39,14 +39,14 @@ export const colors = {
   
   // Category Accents (from reference images)
   categories: {
-    development: { text: '#00E676', bg: '#0D241C', border: '#15422B' },
-    backend: { text: '#00E676', bg: '#0D241C', border: '#15422B' },
-    practice: { text: '#38BDF8', bg: '#0C2338', border: '#133857' },
-    academic: { text: '#38BDF8', bg: '#0C2338', border: '#133857' },
-    learning: { text: '#C084FC', bg: '#271438', border: '#3F225A' },
-    personal: { text: '#F59E0B', bg: '#33220A', border: '#523610' },
-    planning: { text: '#F59E0B', bg: '#33220A', border: '#523610' },
-    health: { text: '#00E676', bg: '#0D241C', border: '#15422B' },
+    development: { text: '#00E676', bg: '#000000', border: '#15422B' },
+    backend: { text: '#00E676', bg: '#000000', border: '#15422B' },
+    practice: { text: '#38BDF8', bg: '#000000', border: '#133857' },
+    academic: { text: '#38BDF8', bg: '#000000', border: '#133857' },
+    learning: { text: '#C084FC', bg: '#000000', border: '#3F225A' },
+    personal: { text: '#F59E0B', bg: '#000000', border: '#523610' },
+    planning: { text: '#F59E0B', bg: '#000000', border: '#523610' },
+    health: { text: '#00E676', bg: '#000000', border: '#15422B' },
   },
   
   status: {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -178,7 +178,7 @@ export default function CommunityScreen({ navigation }) {
             >
               {/* Left: Avatar + Details */}
               <View className="flex-row items-center gap-3 flex-1 mr-2">
-                <View className="w-10 h-10 rounded-full bg-[#0D241C] border border-[#183B25] items-center justify-center overflow-hidden">
+                <View className="w-10 h-10 rounded-full bg-[#000000] border border-[#183B25] items-center justify-center overflow-hidden">
                   {item.profilePic ? (
                     <Image source={{ uri: item.profilePic }} className="w-full h-full" resizeMode="cover" />
                   ) : (
@@ -207,7 +207,7 @@ export default function CommunityScreen({ navigation }) {
                 activeOpacity={0.8}
                 className={`p-2 rounded-xl border ${
                   isFollowing
-                    ? 'bg-[#0D241C] border-momentum-emerald'
+                    ? 'bg-[#000000] border-momentum-emerald'
                     : 'bg-momentum-surface border-momentum-border'
                 }`}
               >
@@ -243,7 +243,7 @@ export default function CommunityScreen({ navigation }) {
         onRequestClose={() => setSelectedUser(null)}
       >
         <View className="flex-1 bg-black/85 justify-end">
-          <View className="bg-[#0D120F] border-t-2 border-momentum-emerald rounded-t-3xl max-h-[88%] p-5 pb-8">
+          <View className="bg-[#000000] border-t-2 border-momentum-emerald rounded-t-3xl max-h-[88%] p-5 pb-8">
             {/* Top Bar with Title and Close Button */}
             <View className="flex-row items-center justify-between mb-3">
               <View className="flex-row items-center gap-2">
@@ -263,7 +263,7 @@ export default function CommunityScreen({ navigation }) {
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Profile Avatar & Info Card */}
               <View className="bg-momentum-card border border-momentum-border rounded-2xl p-4 mb-4 items-center">
-                <View className="w-16 h-16 rounded-full bg-[#06170d] border-2 border-momentum-emerald items-center justify-center overflow-hidden mb-2.5">
+                <View className="w-16 h-16 rounded-full bg-[#000000] border-2 border-momentum-emerald items-center justify-center overflow-hidden mb-2.5">
                   {displayUser?.profilePic ? (
                     <Image source={{ uri: displayUser.profilePic }} className="w-full h-full" resizeMode="cover" />
                   ) : (
@@ -377,7 +377,7 @@ export default function CommunityScreen({ navigation }) {
                         {badges.map((b, idx) => (
                           <View
                             key={b._id || idx}
-                            className="bg-[#09150D] border border-momentum-emerald/40 px-2.5 py-1.5 rounded-lg flex-row items-center gap-1.5"
+                            className="bg-[#000000] border border-momentum-emerald/40 px-2.5 py-1.5 rounded-lg flex-row items-center gap-1.5"
                           >
                             <Award size={12} color="#00E676" />
                             <Text className="text-[11px] font-semibold text-white">
@@ -412,7 +412,7 @@ export default function CommunityScreen({ navigation }) {
                   )}
 
                   {/* Privacy Assurance Banner */}
-                  <View className="p-3 rounded-xl bg-[#08120B] border border-momentum-border flex-row items-center gap-2 mb-4">
+                  <View className="p-3 rounded-xl bg-[#000000] border border-momentum-border flex-row items-center gap-2 mb-4">
                     <Lock size={13} color="#8FA396" />
                     <Text className="text-[10px] text-momentum-textSecondary flex-1 leading-4">
                       Personal task details are strictly private to this user. Only overall consistency, streaks, and public milestones are displayed.
