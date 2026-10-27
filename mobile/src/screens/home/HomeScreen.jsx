@@ -1,14 +1,21 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, FlatList, TouchableOpacity, Text, RefreshControl } from 'react-native';
 import TodayHeader from './components/TodayHeader';
+import DailyQuoteCard from './components/DailyQuoteCard';
+import QuoteSetupModal from './components/QuoteSetupModal';
 import ContributionHeatmap from './components/ContributionHeatmap';
 import TaskRow from './components/TaskRow';
 import AddTaskModal from './components/AddTaskModal';
 import { useTasks } from '../../context/TaskContext';
 import { useAuth } from '../../context/AuthContext';
 import { dailyApi } from '../../api/dailyApi';
+import { quoteApi } from '../../api/quoteApi';
 import { cacheManager } from '../../storage/cacheManager';
+import { localStorage } from '../../storage/localStorage';
+import { updateNativeWidget } from '../../services/systemNotificationService';
 import { Plus, CheckSquare } from 'lucide-react-native';
+
+const DAILY_QUOTE_CACHE_KEY = 'momentum_daily_quote_cache';
 
 function HomeScreen({ navigation }) {
   const { user } = useAuth();
@@ -16,8 +23,54 @@ function HomeScreen({ navigation }) {
   const [heatmapData, setHeatmapData] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showQuoteSetup, setShowQuoteSetup] = useState(false);
+  const [isRefreshingQuote, setIsRefreshingQuote] = useState(false);
+  const [quoteData, setQuoteData] = useState({
+    quote: 'Discipline equals freedom.',
+    author: 'Jocko Willink',
+    category: 'DISCIPLINE',
+  });
 
   const name = user?.name || user?.user_metadata?.name || 'Sudeep';
+  const streak = user?.streak ?? user?.currentStreak ?? 0;
+
+  const loadQuote = async () => {
+    try {
+      const cached = await localStorage.getItem(DAILY_QUOTE_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.quote) {
+          setQuoteData(parsed);
+          updateNativeWidget(parsed.quote, parsed.author, streak);
+        }
+      }
+
+      const res = await quoteApi.getDailyQuote();
+      if (res.data?.success && res.data?.data?.quote) {
+        setQuoteData(res.data.data);
+        await localStorage.setItem(DAILY_QUOTE_CACHE_KEY, JSON.stringify(res.data.data));
+        updateNativeWidget(res.data.data.quote, res.data.data.author, streak);
+      }
+    } catch {
+      // Non-blocking
+    }
+  };
+
+  const handleQuickRefreshQuote = async () => {
+    setIsRefreshingQuote(true);
+    try {
+      const res = await quoteApi.generateQuote({ category: quoteData.category || 'DEVELOPER' });
+      if (res.data?.success && res.data?.data?.quote) {
+        setQuoteData(res.data.data);
+        await localStorage.setItem(DAILY_QUOTE_CACHE_KEY, JSON.stringify(res.data.data));
+        updateNativeWidget(res.data.data.quote, res.data.data.author, streak);
+      }
+    } catch {
+      // Keep existing
+    } finally {
+      setIsRefreshingQuote(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -37,6 +90,7 @@ function HomeScreen({ navigation }) {
   useEffect(() => {
     fetchTasks();
     loadData();
+    loadQuote();
   }, [fetchTasks]);
 
   const onRefresh = async () => {
@@ -69,7 +123,17 @@ function HomeScreen({ navigation }) {
               name={name}
               completedCount={completedCount}
               totalCount={totalCount}
-              streak={user?.streak ?? user?.currentStreak ?? 0}
+              streak={streak}
+            />
+
+            {/* Daily Quote Interactive Card Widget with Set Up Options */}
+            <DailyQuoteCard
+              quote={quoteData.quote}
+              author={quoteData.author}
+              category={quoteData.category}
+              isLoading={isRefreshingQuote}
+              onOpenSetup={() => setShowQuoteSetup(true)}
+              onQuickRefresh={handleQuickRefreshQuote}
             />
 
             {/* Heatmap Card (Synchronized with Database + Live Tasks) */}
@@ -140,6 +204,19 @@ function HomeScreen({ navigation }) {
         visible={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAdd={addTask}
+      />
+
+      {/* Set Up Quotes Options Modal */}
+      <QuoteSetupModal
+        visible={showQuoteSetup}
+        currentQuote={quoteData.quote}
+        currentAuthor={quoteData.author}
+        currentStreak={streak}
+        onClose={() => setShowQuoteSetup(false)}
+        onApplyQuote={(newQuote) => {
+          setQuoteData(newQuote);
+          updateNativeWidget(newQuote.quote, newQuote.author, streak);
+        }}
       />
     </View>
   );
