@@ -9,7 +9,7 @@ import {
   Linking,
 } from 'react-native';
 import { DownloadCloud, Sparkles, X, ArrowUpRight, Globe, AlertCircle } from 'lucide-react-native';
-import { downloadAndInstallUpdate, snoozeUpdateReminder } from '../services/updateService';
+import { downloadAndInstallUpdate, snoozeUpdateReminder, markVersionInstalled } from '../services/updateService';
 import {
   downloadAndInstallApkDirect,
   cancelApkDownloadDirect,
@@ -89,6 +89,7 @@ export default function UpdateModal({
 
           if (data.progress >= 100 || data.status === 'download_complete') {
             setStatusMessage('Download finished! Opening Android installer...');
+            markVersionInstalled(updateInfo.latestVersion);
           } else {
             setStatusMessage(`Downloading update... ${data.progress}%`);
           }
@@ -100,6 +101,7 @@ export default function UpdateModal({
 
       if (!started) {
         // Fallback to browser download if native direct download unavailable
+        markVersionInstalled(updateInfo.latestVersion);
         await downloadAndInstallUpdate(updateInfo.downloadUrl);
         cleanupDownloadState();
         onClose();
@@ -117,6 +119,7 @@ export default function UpdateModal({
       await handleCancelDownload();
     }
     if (updateInfo?.downloadUrl) {
+      markVersionInstalled(updateInfo.latestVersion);
       await downloadAndInstallUpdate(updateInfo.downloadUrl);
     }
     onClose();

@@ -29,12 +29,16 @@ const sanitizeSchedule = (schedule) => {
   if (!schedule) return schedule;
   const cleanBlocks = (blocks) => {
     if (!Array.isArray(blocks)) return [];
-    return blocks.map((b) => {
+    return blocks.map((b, idx) => {
       let title = b.title;
       if (typeof title === 'string' && /^[0-9a-fA-F]{24,}$/.test(title.trim())) {
         title = 'Free Slot';
       }
-      return { ...b, title: title || 'Free Slot' };
+      return {
+        ...b,
+        id: b.id || b._id || `block_${idx}_${Date.now()}`,
+        title: title || 'Free Slot',
+      };
     });
   };
   return {
@@ -206,7 +210,28 @@ function TimetableScreen({ navigation }) {
 
     let updatedList;
     if (editingBlock) {
-      updatedList = currentList.map((b) => (b.id === editingBlock.id ? { ...b, ...blockData } : b));
+      let matched = false;
+      updatedList = currentList.map((b) => {
+        const isMatch =
+          (editingBlock.id && b.id && b.id === editingBlock.id) ||
+          (editingBlock._id && b._id && b._id.toString() === editingBlock._id.toString()) ||
+          (editingBlock.id && b._id && b._id.toString() === editingBlock.id) ||
+          (editingBlock._id && b.id && b.id === editingBlock._id.toString());
+        if (isMatch) {
+          matched = true;
+          return { ...b, ...blockData };
+        }
+        return b;
+      });
+      if (!matched) {
+        // Fallback: match by startTime if it was an unaltered slot
+        const timeIdx = currentList.findIndex((b) => b.startTime === editingBlock.startTime);
+        if (timeIdx >= 0) {
+          updatedList[timeIdx] = { ...currentList[timeIdx], ...blockData };
+        } else {
+          updatedList.push(blockData);
+        }
+      }
     } else {
       updatedList = [...currentList, blockData];
     }
@@ -238,10 +263,19 @@ function TimetableScreen({ navigation }) {
     setEditingBlock(null);
   };
 
-  const handleDeleteBlock = async (blockId) => {
+  const handleDeleteBlock = async (blockOrId) => {
     const targetKey = activeTab;
     const currentList = scheduleData[targetKey] || [];
-    const updatedList = currentList.filter((b) => b.id !== blockId);
+    const targetId = typeof blockOrId === 'object' ? (blockOrId?.id || blockOrId?._id) : blockOrId;
+
+    const updatedList = currentList.filter((b) => {
+      if (typeof blockOrId === 'object' && blockOrId) {
+        if (b.id && blockOrId.id && b.id === blockOrId.id) return false;
+        if (b._id && blockOrId._id && b._id.toString() === blockOrId._id.toString()) return false;
+      }
+      if (targetId && (b.id === targetId || b._id === targetId)) return false;
+      return true;
+    });
 
     const updatedSchedule = {
       ...scheduleData,

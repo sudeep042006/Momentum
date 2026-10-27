@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  Keyboard,
 } from 'react-native';
 import { X, Plus, Clock } from 'lucide-react-native';
 import { colors } from '../../../theme/colors';
+import TimePickerModal from '../../../components/pickers/TimePickerModal';
 
 const CATEGORIES = [
   { label: 'WORK', value: 'work' },
@@ -25,6 +28,7 @@ export default function AddTaskModal({ visible, onClose, onAdd }) {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('work');
   const [startTime, setStartTime] = useState('');
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -47,12 +51,19 @@ export default function AddTaskModal({ visible, onClose, onAdd }) {
       transparent
       animationType="slide"
       statusBarTranslucent
-      onRequestClose={onClose}
+      onRequestClose={() => {
+        if (showTimePicker) {
+          setShowTimePicker(false);
+        } else {
+          onClose();
+        }
+      }}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
+      <View style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
         <View className="flex-1 justify-end">
           {/* Backdrop Overlay (tapping dismisses) */}
           <TouchableOpacity
@@ -120,20 +131,38 @@ export default function AddTaskModal({ visible, onClose, onAdd }) {
               </View>
             </ScrollView>
 
-            {/* Time Target */}
+            {/* Time Target (Touch to Pick) */}
             <Text className="text-[10px] font-mono uppercase tracking-wider font-semibold text-momentum-textSecondary mb-1.5">
               Scheduled Time (Optional)
             </Text>
-            <View className="flex-row items-center bg-momentum-input border border-momentum-border rounded-xl px-3 py-2.5 mb-6">
-              <Clock size={14} color={colors.text.muted} />
-              <TextInput
-                value={startTime}
-                onChangeText={setStartTime}
-                placeholder="e.g. 09:00 PM"
-                placeholderTextColor={colors.text.muted}
-                className="flex-1 text-xs text-white font-mono ml-2 py-0"
-              />
-            </View>
+            <TouchableOpacity
+              onPress={() => {
+                Keyboard.dismiss();
+                setShowTimePicker(true);
+              }}
+              activeOpacity={0.8}
+              className="flex-row items-center justify-between bg-momentum-input border border-momentum-border rounded-xl px-3.5 py-3 mb-6"
+            >
+              <View className="flex-row items-center gap-2">
+                <Clock size={15} color={startTime ? colors.emerald.bright : colors.text.muted} />
+                <Text className={`text-xs font-mono font-bold ${startTime ? 'text-white' : 'text-momentum-textMuted'}`}>
+                  {startTime || 'Tap to choose time (e.g. 09:00 PM)'}
+                </Text>
+              </View>
+              {startTime ? (
+                <TouchableOpacity
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setStartTime('');
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text className="text-[10px] font-mono text-red-400 font-bold">CLEAR</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text className="text-[10px] font-mono text-momentum-emerald font-bold">PICK</Text>
+              )}
+            </TouchableOpacity>
 
             {/* Add Task Button */}
             <TouchableOpacity
@@ -152,6 +181,22 @@ export default function AddTaskModal({ visible, onClose, onAdd }) {
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Time Picker Overlay - Positioned in the DEAD CENTER above the task sheet */}
+      {showTimePicker && (
+        <TimePickerModal
+          visible={true}
+          inline={true}
+          title="Select Task Scheduled Time"
+          initialTime={startTime || '09:00 AM'}
+          onClose={() => setShowTimePicker(false)}
+          onSelectTime={(formatted12h) => {
+            setStartTime(formatted12h);
+            setShowTimePicker(false);
+          }}
+        />
+      )}
+      </View>
     </Modal>
   );
 }

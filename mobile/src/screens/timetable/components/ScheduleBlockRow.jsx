@@ -210,13 +210,9 @@ export default function ScheduleBlockRow({ block, isCurrentTime = false, onEdit,
             </Text>
           </View>
 
-          <TouchableOpacity
-            onPress={() => onEdit && onEdit(block)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            className="p-1 -mr-1"
-          >
+          <View className="p-1 -mr-1">
             <MoreHorizontal size={16} color={colors.text.muted} />
-          </TouchableOpacity>
+          </View>
         </View>
       </TouchableOpacity>
     </View>

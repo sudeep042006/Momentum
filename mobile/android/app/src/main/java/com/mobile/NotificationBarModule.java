@@ -349,6 +349,45 @@ public class NotificationBarModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void getAppVersion(Promise promise) {
+        try {
+            String versionName = reactContext.getPackageManager()
+                .getPackageInfo(reactContext.getPackageName(), 0).versionName;
+            int versionCode;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                versionCode = (int) reactContext.getPackageManager()
+                    .getPackageInfo(reactContext.getPackageName(), 0).getLongVersionCode();
+            } else {
+                versionCode = reactContext.getPackageManager()
+                    .getPackageInfo(reactContext.getPackageName(), 0).versionCode;
+            }
+            WritableMap map = Arguments.createMap();
+            map.putString("versionName", versionName != null ? versionName : "1.1");
+            map.putInt("versionCode", versionCode);
+            promise.resolve(map);
+        } catch (Exception e) {
+            WritableMap map = Arguments.createMap();
+            map.putString("versionName", "1.1");
+            map.putInt("versionCode", 2);
+            promise.resolve(map);
+        }
+    }
+
+    @ReactMethod
+    public void updateWidget(String quote, String author, double streak, Promise promise) {
+        try {
+            MomentumWidgetProvider.updateAllWidgets(reactContext, quote, author, (int) streak);
+            if (promise != null) {
+                promise.resolve(true);
+            }
+        } catch (Exception e) {
+            if (promise != null) {
+                promise.reject("ERR_UPDATE_WIDGET", e.getMessage());
+            }
+        }
+    }
+
+    @ReactMethod
     public void cancelNotification(double notificationId) {
         NotificationManager notificationManager = (NotificationManager) reactContext.getSystemService(Context.NOTIFICATION_SERVICE);
         if (notificationManager != null) {
@@ -364,3 +403,4 @@ public class NotificationBarModule extends ReactContextBaseJavaModule {
         }
     }
 }
+

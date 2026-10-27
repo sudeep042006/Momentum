@@ -158,3 +158,31 @@ export function addDownloadProgressListener(callback) {
     }
   });
 }
+
+/**
+ * Returns native app version and build code
+ */
+export async function getNativeAppVersion() {
+  if (Platform.OS !== 'android' || !NotificationBarModule) {
+    return { versionName: '1.1', versionCode: 2 };
+  }
+  try {
+    return await NotificationBarModule.getAppVersion();
+  } catch (err) {
+    return { versionName: '1.1', versionCode: 2 };
+  }
+}
+
+/**
+ * Updates the Android home screen widget with latest quote & streak
+ */
+export async function updateNativeWidget(quote, author, streak = 1) {
+  if (Platform.OS !== 'android' || !NotificationBarModule) return;
+  try {
+    if (typeof NotificationBarModule.updateWidget === 'function') {
+      await NotificationBarModule.updateWidget(quote || '', author || '', Number(streak) || 1);
+    }
+  } catch (err) {
+    // Non-blocking
+  }
+}

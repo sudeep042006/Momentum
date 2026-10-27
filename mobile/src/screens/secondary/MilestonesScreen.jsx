@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ import {
   Flag,
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import DatePickerModal from '../../components/pickers/DatePickerModal';
 
 export default function MilestonesScreen({ navigation }) {
   const [milestones, setMilestones] = useState([]);
@@ -37,8 +38,9 @@ export default function MilestonesScreen({ navigation }) {
   const [selectedDateStr, setSelectedDateStr] = useState(null); // Filter by selected calendar date or null for all
   const [refreshing, setRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [newTargetDate, setNewTargetDate] = useState('');
+  const [newTargetDate, setNewTargetDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [newCategory, setNewCategory] = useState('DEVELOPMENT');
 
   const fetchMilestones = useCallback(async () => {
@@ -605,15 +607,23 @@ export default function MilestonesScreen({ navigation }) {
                 allowFontScaling={false}
                 className="text-[10px] font-mono uppercase tracking-wider font-semibold text-momentum-textSecondary mb-1.5"
               >
-                Target Date (YYYY-MM-DD)
+                Target Date
               </Text>
-              <TextInput
-                value={newTargetDate}
-                onChangeText={setNewTargetDate}
-                placeholder="2026-11-30"
-                placeholderTextColor={colors.text.muted}
-                className="bg-momentum-input border border-momentum-border rounded-xl px-4 py-2.5 text-xs text-white font-mono mb-4"
-              />
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.8}
+                className="bg-momentum-input border border-momentum-border rounded-xl px-4 py-3 text-xs text-white font-mono mb-4 flex-row items-center justify-between"
+              >
+                <View className="flex-row items-center gap-2">
+                  <CalendarIcon size={15} color={colors.emerald.bright} />
+                  <Text className="text-xs font-mono font-bold text-white">
+                    {newTargetDate || 'Choose Target Date'}
+                  </Text>
+                </View>
+                <Text className="text-[10px] font-mono text-momentum-emerald font-bold">
+                  PICK DATE
+                </Text>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={handleCreate}
@@ -636,6 +646,18 @@ export default function MilestonesScreen({ navigation }) {
           </TouchableOpacity>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Target Date Picker Modal */}
+      <DatePickerModal
+        visible={showDatePicker}
+        title="Select Milestone Target Date"
+        initialDate={newTargetDate}
+        onClose={() => setShowDatePicker(false)}
+        onSelectDate={(selectedStr) => {
+          setNewTargetDate(selectedStr);
+          setShowDatePicker(false);
+        }}
+      />
     </View>
   );
 }

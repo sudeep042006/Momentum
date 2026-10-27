@@ -1,7 +1,8 @@
-export const formatTime12h = (time24) => {
-  if (!time24) return '';
-  const parts = time24.split(':');
-  if (parts.length < 2) return time24;
+export const formatTime12h = (timeStr) => {
+  if (!timeStr) return '';
+  if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr;
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
   
   let hours = parseInt(parts[0], 10);
   const minutes = parts[1];
@@ -10,6 +11,18 @@ export const formatTime12h = (time24) => {
   hours = hours % 12;
   hours = hours ? hours : 12;
   return `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+};
+
+export const formatTime24h = (timeStr) => {
+  if (!timeStr) return '';
+  const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!match) return timeStr;
+  let h = parseInt(match[1], 10);
+  const m = match[2];
+  const p = match[3] ? match[3].toUpperCase() : null;
+  if (p === 'PM' && h < 12) h += 12;
+  if (p === 'AM' && h === 12) h = 0;
+  return `${h.toString().padStart(2, '0')}:${m}`;
 };
 
 export const getCurrentTimeMinutes = () => {

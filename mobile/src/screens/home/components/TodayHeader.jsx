@@ -73,19 +73,16 @@ export default function TodayHeader({ name = 'Sudeep', completedCount = 0, total
 
       {/* Main greeting and summary cards */}
       <View className="flex-row items-start justify-between">
-        {/* Left: Greeting & Quote */}
-        <View className="flex-1 pr-3">
+        {/* Left: Greeting */}
+        <View className="flex-1 pr-3 justify-center">
           <Text className="text-xl font-bold text-white tracking-tight leading-tight">
             {greeting}
           </Text>
           <Text className="text-xl font-bold text-momentum-emerald tracking-tight leading-tight">
             {name}.
           </Text>
-          <Text
-            numberOfLines={2}
-            className="text-[11px] text-momentum-textSecondary italic mt-1.5 leading-snug"
-          >
-            "{quoteData.quote}"{quoteData.author ? ` — ${quoteData.author}` : ''}
+          <Text className="text-xs text-momentum-textSecondary font-medium mt-1">
+            Focus on what moves the needle.
           </Text>
         </View>
 
