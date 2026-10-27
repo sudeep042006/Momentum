@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import BottomTabNavigator from './BottomTabNavigator';
 import MilestonesScreen from '../screens/secondary/MilestonesScreen';
@@ -17,7 +17,7 @@ export default function DrawerNavigator() {
       screenOptions={{
         headerShown: false,
         drawerStyle: {
-          backgroundColor: '#060806',
+          backgroundColor: '#000000',
           width: 300,
           borderRightWidth: 1,
           borderRightColor: '#18241B',

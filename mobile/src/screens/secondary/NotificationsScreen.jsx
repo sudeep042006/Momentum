@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -212,7 +212,7 @@ export default function NotificationsScreen({ navigation }) {
 
   const renderEmptyState = () => (
     <View className="flex-1 items-center justify-center px-6 py-20">
-      <View className="w-16 h-16 rounded-full bg-[#0D241C] border border-[#243629] items-center justify-center mb-4">
+      <View className="w-16 h-16 rounded-full bg-[#000000] border border-[#243629] items-center justify-center mb-4">
         <Bell size={28} color="#00E676" />
       </View>
       <Text className="text-base font-bold text-white mb-2 text-center tracking-tight">
@@ -230,7 +230,7 @@ export default function NotificationsScreen({ navigation }) {
       <SyncStatusBar />
 
       {/* Action / Counter Bar */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-momentum-border bg-[#080D09]">
+      <View className="flex-row items-center justify-between px-4 py-3 border-b border-momentum-border bg-[#000000]">
         <View className="flex-row items-center gap-2">
           <Text className="text-xs font-mono font-bold tracking-widest text-white uppercase">
             ALERTS
@@ -306,7 +306,7 @@ export default function NotificationsScreen({ navigation }) {
         onRequestClose={() => setShowClearConfirm(false)}
       >
         <View className="flex-1 bg-black/80 items-center justify-center p-5">
-          <View className="w-full max-w-sm bg-[#0D120F] border border-[#18241B] rounded-2xl p-5">
+          <View className="w-full max-w-sm bg-[#000000] border border-[#18241B] rounded-2xl p-5">
             <View className="flex-row items-center justify-between mb-3">
               <Text className="text-base font-bold text-white">
                 Clear All Notifications?

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+﻿import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -90,7 +90,7 @@ export default function BottomTabNavigator({ navigation, route }) {
   });
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#060806' }}>
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
       {/* 1. STATIC TOP NAVBAR - Strictly below camera punch hole, never moves on swipe */}
       <AppHeader
         navigation={navigation}
@@ -130,7 +130,7 @@ export default function BottomTabNavigator({ navigation, route }) {
       {/* 3. STATIC BOTTOM TAB BAR - Smooth Native Sliding Green Indicator */}
       <View
         style={{
-          backgroundColor: '#060806',
+          backgroundColor: '#000000',
           borderTopColor: '#18241B',
           borderTopWidth: 1,
           height: 64 + bottomInset,

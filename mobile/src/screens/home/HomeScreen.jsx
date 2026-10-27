@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, FlatList, TouchableOpacity, Text, RefreshControl } from 'react-native';
 import TodayHeader from './components/TodayHeader';
 import ContributionHeatmap from './components/ContributionHeatmap';
@@ -69,7 +69,7 @@ function HomeScreen({ navigation }) {
               name={name}
               completedCount={completedCount}
               totalCount={totalCount}
-              streak={28}
+              streak={user?.streak ?? user?.currentStreak ?? 0}
             />
 
             {/* Heatmap Card (Synchronized with Database + Live Tasks) */}
@@ -104,7 +104,7 @@ function HomeScreen({ navigation }) {
         ListEmptyComponent={
           !isLoading ? (
             <View className="py-10 px-5 items-center justify-center bg-momentum-card border border-dashed border-momentum-border rounded-2xl my-2">
-              <View className="w-12 h-12 rounded-full bg-[#0D241C] items-center justify-center mb-3">
+              <View className="w-12 h-12 rounded-full bg-[#000000] items-center justify-center mb-3">
                 <CheckSquare size={22} color="#00E676" strokeWidth={2.2} />
               </View>
               <Text className="text-sm font-bold text-white mb-1">

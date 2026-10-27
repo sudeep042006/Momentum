@@ -1,13 +1,13 @@
-import React, { useRef, useEffect, useState } from 'react';
+﻿import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { Calendar, ChevronDown, X, CheckCircle } from 'lucide-react-native';
+import { Calendar, ChevronDown, X } from 'lucide-react-native';
 import { colors } from '../../../theme/colors';
 
 const CELL_SIZE = 10;
 const CELL_GAP = 2.5;
 
 const LEVEL_COLORS = [
-  '#111713', // Level 0: 0% / empty
+  '#000000', // Level 0: 0% / empty
   '#0d381e', // Level 1: 1-25%
   '#086634', // Level 2: 26-50%
   '#009e4d', // Level 3: 51-75%
@@ -23,6 +23,7 @@ const formatReadableDate = (dateStr) => {
   const [y, m, d] = dateStr.split('-');
   const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
   return dateObj.toLocaleDateString('en-US', {
+    weekday: 'short',
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -38,8 +39,20 @@ export default function ContributionHeatmap({
   const [selectedCell, setSelectedCell] = useState(null);
   const totalWeeks = 24;
   const weeks = [];
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const now = new Date();
+
+  // Get current day of week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+  const dayOfWeek = now.getDay();
+  // Map so Monday = 0, Tuesday = 1, ..., Sunday = 6
+  const currentDayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+  const yToday = now.getFullYear();
+  const mToday = String(now.getMonth() + 1).padStart(2, '0');
+  const dToday = String(now.getDate()).padStart(2, '0');
+  const todayStr = `${yToday}-${mToday}-${dToday}`;
+
+  // Find Monday of the current week
+  const currentWeekMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - currentDayIndex);
 
   // Map real database records by date string (YYYY-MM-DD)
   const dataMap = new Map();
@@ -78,22 +91,35 @@ export default function ContributionHeatmap({
     });
   }
 
-  // Build grid of 24 weeks up to today
+  // Build grid of 24 weeks ending on current week
   for (let w = 0; w < totalWeeks; w++) {
+    const weekOffset = totalWeeks - 1 - w; // 0 for current week, 1 for previous week, etc.
+    const weekMonday = new Date(currentWeekMonday);
+    weekMonday.setDate(currentWeekMonday.getDate() - weekOffset * 7);
+
     const daysInWeek = [];
     for (let d = 0; d < 7; d++) {
-      const pastDays = (totalWeeks - 1 - w) * 7 + (6 - d);
-      const cellDate = new Date(today);
-      cellDate.setDate(today.getDate() - pastDays);
-      const dateStr = cellDate.toISOString().split('T')[0];
+      const cellDate = new Date(weekMonday);
+      cellDate.setDate(weekMonday.getDate() + d);
+
+      const y = cellDate.getFullYear();
+      const m = String(cellDate.getMonth() + 1).padStart(2, '0');
+      const dt = String(cellDate.getDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${dt}`;
+
+      const isToday = dateStr === todayStr;
+      const isFuture = cellDate > now && !isToday;
 
       // Exact database value, defaulting to 0 for days with no activity
       const entry = dataMap.get(dateStr) || { rank: 0, completed: 0, total: 0 };
       daysInWeek.push({
         date: dateStr,
-        level: entry.rank,
-        completed: entry.completed,
-        total: entry.total,
+        level: isFuture ? 0 : entry.rank,
+        completed: isFuture ? 0 : entry.completed,
+        total: isFuture ? 0 : entry.total,
+        isToday,
+        isFuture,
+        dayOfWeek: DAYS[d],
       });
     }
     weeks.push(daysInWeek);
@@ -163,15 +189,25 @@ export default function ContributionHeatmap({
                     return (
                       <TouchableOpacity
                         key={dIndex}
-                        activeOpacity={0.7}
-                        onPress={() => setSelectedCell(cell)}
+                        activeOpacity={cell.isFuture ? 1 : 0.7}
+                        disabled={cell.isFuture}
+                        onPress={() => !cell.isFuture && setSelectedCell(cell)}
                         style={{
                           width: CELL_SIZE,
                           height: CELL_SIZE,
-                          backgroundColor: LEVEL_COLORS[cell.level] || LEVEL_COLORS[0],
+                          backgroundColor: cell.isFuture
+                            ? '#0A0E0B'
+                            : LEVEL_COLORS[cell.level] || LEVEL_COLORS[0],
                           borderRadius: 2.5,
-                          borderWidth: isSelected ? 1.5 : 0,
-                          borderColor: isSelected ? '#FFFFFF' : 'transparent',
+                          borderWidth: cell.isToday ? 1.5 : isSelected ? 1.5 : cell.isFuture ? 0.5 : 0,
+                          borderColor: cell.isToday
+                            ? '#00E676'
+                            : isSelected
+                            ? '#FFFFFF'
+                            : cell.isFuture
+                            ? '#121A14'
+                            : 'transparent',
+                          opacity: cell.isFuture ? 0.35 : 1,
                         }}
                       />
                     );
@@ -197,7 +233,7 @@ export default function ContributionHeatmap({
 
       {/* Selected Day Task Detail Info Card */}
       {selectedCell ? (
-        <View className="mt-3.5 p-3 rounded-xl bg-[#08120B] border border-momentum-emerald flex-row items-center justify-between">
+        <View className="mt-3.5 p-3 rounded-xl bg-[#000000] border border-momentum-emerald flex-row items-center justify-between">
           <View className="flex-row items-center gap-2.5 flex-1 mr-2">
             <View
               className="w-3.5 h-3.5 rounded-full border border-white/20"

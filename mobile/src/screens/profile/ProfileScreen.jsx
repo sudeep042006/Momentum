@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -136,7 +136,7 @@ function ProfileScreen({ navigation }) {
               <ShieldCheck size={15} color="#00E676" />
               <Text className="text-xs text-momentum-textSecondary">Account Status</Text>
             </View>
-            <View className="px-2 py-0.5 rounded-full bg-[#0D241C] border border-[#183B25]">
+            <View className="px-2 py-0.5 rounded-full bg-[#000000] border border-[#183B25]">
               <Text className="text-[10px] font-bold text-momentum-emerald font-mono">
                 ACTIVE
               </Text>

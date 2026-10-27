@@ -46,32 +46,63 @@ export function TaskProvider({ children }) {
   const addTask = async (taskData) => {
     const today = getTodayDateString();
     const tempId = `local_${Date.now()}`;
+
+    // Guarantee a valid backend category enum ('work' | 'personal' | 'health' | 'learning')
+    const VALID_CATEGORIES = ['work', 'personal', 'health', 'learning'];
+    let safeCategory = 'work';
+    if (taskData.category && VALID_CATEGORIES.includes(taskData.category.toLowerCase())) {
+      safeCategory = taskData.category.toLowerCase();
+    } else if (
+      taskData.category === 'development' ||
+      taskData.category === 'backend' ||
+      taskData.category === 'planning'
+    ) {
+      safeCategory = 'work';
+    } else if (taskData.category === 'practice') {
+      safeCategory = 'learning';
+    }
+
     const newTask = {
       _id: tempId,
       date: today,
       status: 'pending',
-      priority: 'medium',
-      category: 'work',
-      ...taskData,
+      priority: taskData.priority || 'medium',
+      category: safeCategory,
+      displayCategory: taskData.displayCategory || taskData.category || safeCategory,
+      title: taskData.title,
+      startTime: taskData.startTime || null,
       isLocal: true,
       createdAt: new Date().toISOString(),
     };
 
-    // Optimistic UI update
-    const updated = [newTask, ...tasks];
-    setTasks(updated);
-    await cacheManager.setTasks(today, updated);
+    const apiPayload = {
+      title: taskData.title,
+      category: safeCategory,
+      priority: taskData.priority || 'medium',
+      date: today,
+      startTime: taskData.startTime || null,
+      status: 'pending',
+    };
+
+    // Optimistic UI update using functional updater
+    setTasks((prev) => {
+      const updated = [newTask, ...prev];
+      cacheManager.setTasks(today, updated);
+      return updated;
+    });
 
     // Network / Queue handling
     const isOnline = await networkMonitor.checkConnection();
     if (isOnline) {
       try {
-        const res = await taskApi.createTask(taskData);
+        const res = await taskApi.createTask(apiPayload);
         const serverTask = res.data?.data;
         if (serverTask) {
-          const reconciled = updated.map((t) => (t._id === tempId ? serverTask : t));
-          setTasks(reconciled);
-          await cacheManager.setTasks(today, reconciled);
+          setTasks((prev) => {
+            const reconciled = prev.map((t) => (t._id === tempId ? serverTask : t));
+            cacheManager.setTasks(today, reconciled);
+            return reconciled;
+          });
           return serverTask;
         }
       } catch (err) {
@@ -79,14 +110,14 @@ export function TaskProvider({ children }) {
         await syncQueue.enqueue({
           endpoint: '/api/tasks',
           method: 'POST',
-          payload: taskData,
+          payload: apiPayload,
         });
       }
     } else {
       await syncQueue.enqueue({
         endpoint: '/api/tasks',
         method: 'POST',
-        payload: taskData,
+        payload: apiPayload,
       });
     }
 

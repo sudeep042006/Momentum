@@ -5,27 +5,36 @@ import DailyList from '../daily-lists/daily.model.js';
 import { encrypt, decrypt } from '../../utils/encryption.js';
 
 const decryptBlocks = (blocks) => {
+    if (!Array.isArray(blocks)) return [];
     return blocks.map(b => {
-        if (b.iv && b.authTag) {
+        const bObj = b && typeof b.toObject === 'function' ? b.toObject() : { ...b };
+        if (bObj.iv && bObj.authTag && bObj.title) {
             try {
-                b.title = decrypt(b.title, b.iv, b.authTag);
+                bObj.title = decrypt(bObj.title, bObj.iv, bObj.authTag);
             } catch (e) {
-                console.error("Decryption failed for schedule block", b.id);
+                console.error("Decryption failed for schedule block", bObj.id);
             }
         }
-        return b;
+        // Sanitize any previously corrupted double-encrypted raw hex strings
+        if (typeof bObj.title === 'string' && /^[0-9a-fA-F]{32,}$/.test(bObj.title.trim())) {
+            bObj.title = "Free Slot";
+        }
+        return bObj;
     });
 };
 
 const encryptBlocks = (blocks) => {
+    if (!Array.isArray(blocks)) return [];
     return blocks.map(b => {
-        // Only encrypt if it's not already encrypted (i.e. missing iv/authTag from client)
-        // If the client sends back the same plaintext, we just re-encrypt it.
-        const encrypted = encrypt(b.title);
-        b.title = encrypted.encryptedData;
-        b.iv = encrypted.iv;
-        b.authTag = encrypted.authTag;
-        return b;
+        // ALWAYS clone to prevent mutating the caller's objects
+        const bObj = b && typeof b.toObject === 'function' ? b.toObject() : { ...b };
+        if (bObj.title) {
+            const encrypted = encrypt(bObj.title);
+            bObj.title = encrypted.encryptedData;
+            bObj.iv = encrypted.iv;
+            bObj.authTag = encrypted.authTag;
+        }
+        return bObj;
     });
 };
 
@@ -46,15 +55,17 @@ const getSchedule = async (userId) => {
 const updateSchedule = async (userId, data) => {
     let schedule = await Schedule.findOne({ user: userId });
     
-    if (data.workingDays) data.workingDays = encryptBlocks(data.workingDays);
-    if (data.holidays) data.holidays = encryptBlocks(data.holidays);
+    // Clone data properties so workingDays and holidays don't share references
+    const payload = { ...data };
+    if (payload.workingDays) payload.workingDays = encryptBlocks(payload.workingDays);
+    if (payload.holidays) payload.holidays = encryptBlocks(payload.holidays);
 
     if (!schedule) {
-        schedule = new Schedule({ user: userId, ...data });
+        schedule = new Schedule({ user: userId, ...payload });
     } else {
-        if (data.useScheduleForDailyTasks !== undefined) schedule.useScheduleForDailyTasks = data.useScheduleForDailyTasks;
-        if (data.workingDays) schedule.workingDays = data.workingDays;
-        if (data.holidays) schedule.holidays = data.holidays;
+        if (payload.useScheduleForDailyTasks !== undefined) schedule.useScheduleForDailyTasks = payload.useScheduleForDailyTasks;
+        if (payload.workingDays) schedule.workingDays = payload.workingDays;
+        if (payload.holidays) schedule.holidays = payload.holidays;
     }
     
     await schedule.save();
@@ -67,36 +78,52 @@ const updateSchedule = async (userId, data) => {
 };
 
 const generateTemplate = async (userId) => {
-    const blocks = [];
-    for(let i=6; i<24; i++) {
-        const start = i.toString().padStart(2, '0') + ':00';
-        const end = (i+1 === 24 ? '00' : (i+1).toString().padStart(2, '0')) + ':00';
-        blocks.push({
-            id: `template-${i}-${Date.now()}`,
-            startTime: start,
-            endTime: end,
-            title: 'Empty Block',
-            category: 'Empty',
-            color: 'grey',
-            addToDailyList: false
-        });
-    }
-    return await updateSchedule(userId, { workingDays: blocks, holidays: blocks });
+    // 12-Hour Blank Template: 08:00 AM to 08:00 PM (12 one-hour slots)
+    const create12HourBlocks = () => {
+        const blocks = [];
+        for (let i = 8; i < 20; i++) {
+            const start = i.toString().padStart(2, '0') + ':00';
+            const end = (i + 1).toString().padStart(2, '0') + ':00';
+            blocks.push({
+                id: `template-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                startTime: start,
+                endTime: end,
+                title: 'Free Slot',
+                category: 'LEARNING',
+                color: 'blue',
+                addToDailyList: false
+            });
+        }
+        return blocks;
+    };
+
+    const workingDays = create12HourBlocks();
+    const holidays = create12HourBlocks();
+
+    return await updateSchedule(userId, { workingDays, holidays });
 };
 
 const syncScheduleTasks = async (userId, dateStr) => {
     const schedule = await getSchedule(userId);
-    if (!schedule.useScheduleForDailyTasks) return;
+    if (!schedule.useScheduleForDailyTasks) return { tasksCreatedCount: 0, scheduleType: '' };
 
-    const dateObj = new Date(dateStr);
-    const day = dateObj.getDay(); 
-    const isHoliday = (day === 0 || day === 6);
+    const parts = (dateStr || '').split('-').map(Number);
+    let isHoliday = false;
+    if (parts.length === 3 && !isNaN(parts[0])) {
+        const dateObj = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+        const day = dateObj.getUTCDay();
+        isHoliday = (day === 0 || day === 6);
+    } else {
+        const dateObj = new Date();
+        const day = dateObj.getDay();
+        isHoliday = (day === 0 || day === 6);
+    }
     const scheduleType = isHoliday ? 'Holidays' : 'Working Days';
     
-    const blocks = isHoliday ? schedule.holidays : schedule.workingDays;
+    const blocks = isHoliday ? (schedule.holidays || []) : (schedule.workingDays || []);
     
-    const tasksToCreate = blocks.filter(b => b.addToDailyList);
-    const uniqueTaskTitles = [...new Set(tasksToCreate.map(b => b.title))];
+    const tasksToCreate = blocks.filter(b => Boolean(b.addToDailyList));
+    const uniqueTaskTitles = [...new Set(tasksToCreate.map(b => b.title).filter(Boolean))];
     
     // existingTasks will have encrypted titles, we need to decrypt them to check uniqueness
     const existingTasks = await Task.find({ user: userId, date: dateStr });
@@ -117,9 +144,12 @@ const syncScheduleTasks = async (userId, dateStr) => {
         return 'work';
     };
 
-    for (const title of uniqueTaskTitles) {
+    for (const rawTitle of uniqueTaskTitles) {
+        const title = (typeof rawTitle === 'string' && /^[0-9a-fA-F]{24,}$/.test(rawTitle.trim()))
+            ? 'Schedule Task'
+            : rawTitle;
         if (!existingTitles.has(title)) {
-            const block = tasksToCreate.find(b => b.title === title);
+            const block = tasksToCreate.find(b => b.title === rawTitle || b.title === title);
             
             const encryptedTitle = encrypt(title);
             

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { FileText, Quote, MoreHorizontal, ImageIcon } from 'lucide-react-native';
 import { colors } from '../../../theme/colors';
@@ -30,7 +30,7 @@ export default function JournalCard({ item, onPress, onEdit, onDelete }) {
       <View className="flex-row items-start justify-between mb-2">
         <View className="flex-row items-center gap-3 flex-1 mr-2">
           {/* Green Icon Box */}
-          <View className="w-8 h-8 rounded-xl bg-[#0D241C] border border-[#15422B] items-center justify-center">
+          <View className="w-8 h-8 rounded-xl bg-[#000000] border border-[#15422B] items-center justify-center">
             {isQuote ? (
               <Quote size={15} color={colors.emerald.bright} />
             ) : (
@@ -89,7 +89,7 @@ export default function JournalCard({ item, onPress, onEdit, onDelete }) {
 
       {/* Attached Image Preview */}
       {item.image ? (
-        <View className="mb-3 rounded-xl overflow-hidden border border-momentum-border bg-[#060806]">
+        <View className="mb-3 rounded-xl overflow-hidden border border-momentum-border bg-[#000000]">
           <Image
             source={{ uri: item.image }}
             className="w-full h-44"
@@ -103,7 +103,7 @@ export default function JournalCard({ item, onPress, onEdit, onDelete }) {
         {tags.map((tag, idx) => (
           <View
             key={idx}
-            className="px-2.5 py-1 rounded-md bg-[#0D241C] border border-[#15422B]"
+            className="px-2.5 py-1 rounded-md bg-[#000000] border border-[#15422B]"
           >
             <Text
               allowFontScaling={false}

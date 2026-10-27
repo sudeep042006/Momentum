@@ -32,12 +32,17 @@ const generateTemplate = async (req, res) => {
 
 const syncToday = async (req, res) => {
     try {
-        const dateStr = new Date().toISOString().split('T')[0];
+        const dateStr = req.body?.date || req.query?.date || new Date().toISOString().split('T')[0];
         const result = await scheduleService.syncScheduleTasks(req.user.id, dateStr);
-        res.status(200).json({ message: "Synced successfully", count: result.tasksCreatedCount, scheduleType: result.scheduleType });
+        res.status(200).json({ 
+            success: true,
+            message: "Synced successfully", 
+            count: result?.tasksCreatedCount || 0, 
+            scheduleType: result?.scheduleType || '' 
+        });
     } catch (error) {
         console.error("Error syncing schedule:", error);
-        res.status(500).json({ message: "Internal server error" });
+        res.status(500).json({ success: false, message: "Internal server error" });
     }
 };
 

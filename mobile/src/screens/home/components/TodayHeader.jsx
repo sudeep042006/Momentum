@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Flame } from 'lucide-react-native';
 import { colors } from '../../../theme/colors';
+import { quoteApi } from '../../../api/quoteApi';
+import { localStorage } from '../../../storage/localStorage';
 
-export default function TodayHeader({ name = 'Sudeep', completedCount = 0, totalCount = 0, streak = 28 }) {
-  const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 70;
+const DAILY_QUOTE_CACHE_KEY = 'momentum_daily_quote_cache';
+
+export default function TodayHeader({ name = 'Sudeep', completedCount = 0, totalCount = 0, streak = 0 }) {
+  const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   
   // Format current date: MON, 20 OCT 2026
   const now = new Date();
@@ -16,6 +20,43 @@ export default function TodayHeader({ name = 'Sudeep', completedCount = 0, total
   // Greeting based on time of day
   const hour = now.getHours();
   const greeting = hour < 12 ? 'Good morning,' : hour < 18 ? 'Good afternoon,' : 'Good evening,';
+
+  // Dynamic daily quote
+  const [quoteData, setQuoteData] = useState({
+    quote: "Discipline equals freedom.",
+    author: "Jocko Willink",
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadQuote() {
+      try {
+        // 1. Read cached quote immediately for zero lag
+        const cached = await localStorage.getItem(DAILY_QUOTE_CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.quote) {
+            setQuoteData(parsed);
+          }
+        }
+
+        // 2. Fetch fresh quote in background
+        const res = await quoteApi.getDailyQuote();
+        if (res.data?.success && res.data?.data?.quote && isMounted) {
+          setQuoteData(res.data.data);
+          await localStorage.setItem(DAILY_QUOTE_CACHE_KEY, JSON.stringify(res.data.data));
+        }
+      } catch (err) {
+        // Keep current quote on network errors
+      }
+    }
+
+    loadQuote();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // SVG circular ring calculation
   const radius = 22;
@@ -40,8 +81,11 @@ export default function TodayHeader({ name = 'Sudeep', completedCount = 0, total
           <Text className="text-xl font-bold text-momentum-emerald tracking-tight leading-tight">
             {name}.
           </Text>
-          <Text className="text-[11px] text-momentum-textSecondary italic mt-1.5 leading-snug">
-            "Small steps every day lead to big results."
+          <Text
+            numberOfLines={2}
+            className="text-[11px] text-momentum-textSecondary italic mt-1.5 leading-snug"
+          >
+            "{quoteData.quote}"{quoteData.author ? ` — ${quoteData.author}` : ''}
           </Text>
         </View>
 

@@ -10,6 +10,7 @@ import {
 import JournalCard from './components/JournalCard';
 import JournalEntryModal from './components/JournalEntryModal';
 import JournalDetailModal from './components/JournalDetailModal';
+import AiQuoteModal from './components/AiQuoteModal';
 import { journalApi } from '../../api/journalApi';
 import { cacheManager } from '../../storage/cacheManager';
 import { syncQueue } from '../../storage/syncQueue';
@@ -21,6 +22,7 @@ import {
   Plus,
   FileText,
   Quote,
+  Sparkles,
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 
@@ -30,6 +32,7 @@ function JournalScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [selectedJournal, setSelectedJournal] = useState(null);
 
@@ -254,23 +257,42 @@ function JournalScreen({ navigation }) {
                 </Text>
               </View>
 
-              <TouchableOpacity
-                onPress={() => {
-                  setEditingItem(null);
-                  setIsModalOpen(true);
-                }}
-                activeOpacity={0.8}
-                className="bg-momentum-emerald px-3.5 py-1.5 rounded-xl flex-row items-center gap-1.5"
-              >
-                <Plus size={14} color="#000000" strokeWidth={3} />
-                <Text
-                  numberOfLines={1}
-                  allowFontScaling={false}
-                  className="text-xs font-bold text-black font-sans"
+              <View className="flex-row items-center gap-2">
+                {activeTab === 'quote' && (
+                  <TouchableOpacity
+                    onPress={() => setIsAiModalOpen(true)}
+                    activeOpacity={0.8}
+                    className="bg-[#000000] border border-momentum-emerald px-3 py-1.5 rounded-xl flex-row items-center gap-1.5"
+                  >
+                    <Sparkles size={13} color="#00E676" />
+                    <Text
+                      numberOfLines={1}
+                      allowFontScaling={false}
+                      className="text-xs font-bold text-momentum-emerald font-sans"
+                    >
+                      AI Quote
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setEditingItem(null);
+                    setIsModalOpen(true);
+                  }}
+                  activeOpacity={0.8}
+                  className="bg-momentum-emerald px-3.5 py-1.5 rounded-xl flex-row items-center gap-1.5"
                 >
-                  New
-                </Text>
-              </TouchableOpacity>
+                  <Plus size={14} color="#000000" strokeWidth={3} />
+                  <Text
+                    numberOfLines={1}
+                    allowFontScaling={false}
+                    className="text-xs font-bold text-black font-sans"
+                  >
+                    New
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Segmented Notes / Quotes Toggle */}
@@ -279,7 +301,7 @@ function JournalScreen({ navigation }) {
                 onPress={() => setActiveTab('note')}
                 activeOpacity={0.8}
                 className={`flex-1 py-3 rounded-2xl border flex-row items-center justify-center gap-2 ${activeTab === 'note'
-                    ? 'bg-[#0B140E] border-momentum-emerald'
+                    ? 'bg-[#000000] border-momentum-emerald'
                     : 'bg-momentum-card border-momentum-border'
                   }`}
               >
@@ -301,7 +323,7 @@ function JournalScreen({ navigation }) {
                 onPress={() => setActiveTab('quote')}
                 activeOpacity={0.8}
                 className={`flex-1 py-3 rounded-2xl border flex-row items-center justify-center gap-2 ${activeTab === 'quote'
-                    ? 'bg-[#0B140E] border-momentum-emerald'
+                    ? 'bg-[#000000] border-momentum-emerald'
                     : 'bg-momentum-card border-momentum-border'
                   }`}
               >
@@ -355,7 +377,7 @@ function JournalScreen({ navigation }) {
         )}
         ListEmptyComponent={
           <View className="py-12 px-6 items-center justify-center bg-momentum-card border border-dashed border-momentum-border rounded-2xl my-2">
-            <View className="w-12 h-12 rounded-full bg-[#0D241C] items-center justify-center mb-3">
+            <View className="w-12 h-12 rounded-full bg-[#000000] items-center justify-center mb-3">
               {activeTab === 'note' ? (
                 <FileText size={22} color="#00E676" strokeWidth={2.2} />
               ) : (
@@ -410,6 +432,15 @@ function JournalScreen({ navigation }) {
           setEditingItem(null);
         }}
         onSave={handleSaveEntry}
+      />
+
+      {/* OpenRouter AI Quote Generator Modal */}
+      <AiQuoteModal
+        visible={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        onQuoteSaved={() => {
+          loadJournals();
+        }}
       />
     </View>
   );

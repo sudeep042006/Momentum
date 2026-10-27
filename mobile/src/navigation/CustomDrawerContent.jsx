@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
@@ -80,7 +80,7 @@ export default function CustomDrawerContent({ navigation, state }) {
     <View
       style={{
         flex: 1,
-        backgroundColor: '#060806',
+        backgroundColor: '#000000',
         paddingTop: Math.max(insets.top, 14),
         paddingBottom: Math.max(insets.bottom, 14),
       }}
@@ -132,7 +132,7 @@ export default function CustomDrawerContent({ navigation, state }) {
           className="flex-row items-center justify-between p-3 rounded-2xl bg-momentum-card border border-momentum-border mb-4"
         >
           <View className="flex-row items-center gap-3 flex-1 mr-2">
-            <View className="w-11 h-11 rounded-full bg-[#0D241C] border border-[#1B3624] items-center justify-center overflow-hidden">
+            <View className="w-11 h-11 rounded-full bg-[#000000] border border-[#1B3624] items-center justify-center overflow-hidden">
               {profilePic ? (
                 <Image source={{ uri: profilePic }} className="w-full h-full" resizeMode="cover" />
               ) : (
@@ -177,7 +177,7 @@ export default function CustomDrawerContent({ navigation, state }) {
         <TouchableOpacity
           onPress={() => navigateToTab('Home')}
           className={`flex-row items-center gap-3 px-3 py-2.5 rounded-xl mb-1 ${
-            currentTab === 'Home' ? 'bg-[#0D261C]' : 'bg-transparent'
+            currentTab === 'Home' ? 'bg-[#000000]' : 'bg-transparent'
           }`}
         >
           <Home
@@ -198,7 +198,7 @@ export default function CustomDrawerContent({ navigation, state }) {
         <TouchableOpacity
           onPress={() => navigateToTab('Journal')}
           className={`flex-row items-center gap-3 px-3 py-2.5 rounded-xl mb-1 ${
-            currentTab === 'Journal' ? 'bg-[#0D261C]' : 'bg-transparent'
+            currentTab === 'Journal' ? 'bg-[#000000]' : 'bg-transparent'
           }`}
         >
           <BookOpen
@@ -219,7 +219,7 @@ export default function CustomDrawerContent({ navigation, state }) {
         <TouchableOpacity
           onPress={() => navigateToTab('Schedule')}
           className={`flex-row items-center gap-3 px-3 py-2.5 rounded-xl mb-1 ${
-            currentTab === 'Schedule' ? 'bg-[#0D261C]' : 'bg-transparent'
+            currentTab === 'Schedule' ? 'bg-[#000000]' : 'bg-transparent'
           }`}
         >
           <Calendar
@@ -240,7 +240,7 @@ export default function CustomDrawerContent({ navigation, state }) {
         <TouchableOpacity
           onPress={() => navigateToTab('Profile')}
           className={`flex-row items-center gap-3 px-3 py-2.5 rounded-xl mb-4 ${
-            currentTab === 'Profile' ? 'bg-[#0D261C]' : 'bg-transparent'
+            currentTab === 'Profile' ? 'bg-[#000000]' : 'bg-transparent'
           }`}
         >
           <User
@@ -557,7 +557,7 @@ export default function CustomDrawerContent({ navigation, state }) {
             style={{
               width: '100%',
               maxWidth: 340,
-              backgroundColor: '#0D120F',
+              backgroundColor: '#000000',
               borderRadius: 20,
               borderWidth: 1.5,
               borderColor: '#00E676',

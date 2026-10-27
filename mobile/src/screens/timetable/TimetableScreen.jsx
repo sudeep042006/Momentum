@@ -13,6 +13,8 @@ import ScheduleBlockRow from './components/ScheduleBlockRow';
 import EditBlockModal from './components/EditBlockModal';
 import { scheduleApi } from '../../api/scheduleApi';
 import { cacheManager } from '../../storage/cacheManager';
+import { useTasks } from '../../context/TaskContext';
+import { getTodayDateString } from '../../utils/dateUtils';
 import {
   Briefcase,
   Coffee,
@@ -23,7 +25,45 @@ import {
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 
+const sanitizeSchedule = (schedule) => {
+  if (!schedule) return schedule;
+  const cleanBlocks = (blocks) => {
+    if (!Array.isArray(blocks)) return [];
+    return blocks.map((b) => {
+      let title = b.title;
+      if (typeof title === 'string' && /^[0-9a-fA-F]{24,}$/.test(title.trim())) {
+        title = 'Free Slot';
+      }
+      return { ...b, title: title || 'Free Slot' };
+    });
+  };
+  return {
+    ...schedule,
+    workingDays: cleanBlocks(schedule.workingDays),
+    holidays: cleanBlocks(schedule.holidays),
+  };
+};
+
+const create12HourBlankBlocks = () => {
+  const blocks = [];
+  for (let i = 8; i < 20; i++) {
+    const start = i.toString().padStart(2, '0') + ':00';
+    const end = (i + 1).toString().padStart(2, '0') + ':00';
+    blocks.push({
+      id: `slot-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      startTime: start,
+      endTime: end,
+      title: 'Free Slot',
+      category: 'LEARNING',
+      color: 'blue',
+      addToDailyList: false,
+    });
+  }
+  return blocks;
+};
+
 function TimetableScreen({ navigation }) {
+  const { fetchTasks } = useTasks();
   const [scheduleData, setScheduleData] = useState({
     workingDays: [],
     holidays: [],
@@ -40,14 +80,16 @@ function TimetableScreen({ navigation }) {
     try {
       const cached = await cacheManager.getSchedule();
       if (cached && typeof cached === 'object') {
-        setScheduleData((prev) => ({ ...prev, ...cached }));
+        const cleanCached = sanitizeSchedule(cached);
+        setScheduleData((prev) => ({ ...prev, ...cleanCached }));
       }
 
       const res = await scheduleApi.getSchedule();
       const serverData = res.data?.data;
       if (serverData) {
-        setScheduleData(serverData);
-        await cacheManager.setSchedule(serverData);
+        const cleanServer = sanitizeSchedule(serverData);
+        setScheduleData(cleanServer);
+        await cacheManager.setSchedule(cleanServer);
       }
     } catch (e) {
       // Use cached data
@@ -72,8 +114,12 @@ function TimetableScreen({ navigation }) {
     try {
       await scheduleApi.updateSchedule({ useScheduleForDailyTasks: newValue });
       if (newValue) {
-        const syncRes = await scheduleApi.syncToday();
+        const today = getTodayDateString();
+        const syncRes = await scheduleApi.syncToday(today);
         const count = syncRes?.data?.count || 0;
+        if (typeof fetchTasks === 'function') {
+          await fetchTasks(today);
+        }
         Alert.alert(
           'Schedule Synced',
           count > 0
@@ -89,8 +135,12 @@ function TimetableScreen({ navigation }) {
   const handleSyncToday = async () => {
     setIsSyncing(true);
     try {
-      const res = await scheduleApi.syncToday();
+      const today = getTodayDateString();
+      const res = await scheduleApi.syncToday(today);
       const count = res?.data?.count || 0;
+      if (typeof fetchTasks === 'function') {
+        await fetchTasks(today);
+      }
       Alert.alert(
         'Synced with Today',
         count > 0
@@ -104,21 +154,50 @@ function TimetableScreen({ navigation }) {
     }
   };
 
-  const handleGenerateTemplate = async () => {
-    setIsGenerating(true);
-    try {
-      const res = await scheduleApi.generateTemplate();
-      const serverData = res.data?.data;
-      if (serverData) {
-        setScheduleData(serverData);
-        await cacheManager.setSchedule(serverData);
-        Alert.alert('Template Generated', 'Created standard 24-hour routine templates for Weekdays & Weekends.');
-      }
-    } catch (err) {
-      Alert.alert('Template Error', 'Could not generate template. Please check your internet connection.');
-    } finally {
-      setIsGenerating(false);
-    }
+  const handleGenerateTemplate = () => {
+    Alert.alert(
+      'Reset Schedule Template',
+      'This will reset your schedule to a clean 12-hour blank template (08:00 AM – 08:00 PM) for both Weekdays and Weekends. Any custom routine blocks will be replaced. Proceed?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset to Blank 12h',
+          style: 'destructive',
+          onPress: async () => {
+            setIsGenerating(true);
+            try {
+              const workingDays = create12HourBlankBlocks();
+              const holidays = create12HourBlankBlocks();
+
+              let serverData;
+              try {
+                const res = await scheduleApi.generateTemplate();
+                serverData = res.data?.data;
+              } catch (apiErr) {
+                const res2 = await scheduleApi.updateSchedule({ workingDays, holidays });
+                serverData = res2.data?.data;
+              }
+
+              const finalData = sanitizeSchedule(
+                serverData || {
+                  ...scheduleData,
+                  workingDays,
+                  holidays,
+                }
+              );
+
+              setScheduleData(finalData);
+              await cacheManager.setSchedule(finalData);
+              Alert.alert('Template Ready', 'Clean 12-hour blank template (08:00 AM – 08:00 PM) is ready to customize!');
+            } catch (err) {
+              Alert.alert('Template Error', 'Could not reset template. Please check your internet connection.');
+            } finally {
+              setIsGenerating(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleSaveBlock = async (blockData) => {
@@ -146,7 +225,11 @@ function TimetableScreen({ navigation }) {
     try {
       await scheduleApi.updateSchedule({ [targetKey]: updatedList });
       if (updatedSchedule.useScheduleForDailyTasks && blockData.addToDailyList) {
-        await scheduleApi.syncToday();
+        const today = getTodayDateString();
+        await scheduleApi.syncToday(today);
+        if (typeof fetchTasks === 'function') {
+          await fetchTasks(today);
+        }
       }
     } catch (err) {
       console.warn('Failed to save schedule block to backend:', err);
@@ -288,7 +371,7 @@ function TimetableScreen({ navigation }) {
                 activeOpacity={0.8}
                 className={`flex-1 py-3 rounded-2xl border flex-row items-center justify-center gap-2 ${
                   activeTab === 'workingDays'
-                    ? 'bg-[#0B140E] border-momentum-emerald'
+                    ? 'bg-[#000000] border-momentum-emerald'
                     : 'bg-momentum-card border-momentum-border'
                 }`}
               >
@@ -307,7 +390,7 @@ function TimetableScreen({ navigation }) {
                 </Text>
                 <View
                   className={`px-1.5 py-0.5 rounded-full ${
-                    activeTab === 'workingDays' ? 'bg-[#0D241C]' : 'bg-[#18241B]'
+                    activeTab === 'workingDays' ? 'bg-[#000000]' : 'bg-[#18241B]'
                   }`}
                 >
                   <Text
@@ -327,7 +410,7 @@ function TimetableScreen({ navigation }) {
                 activeOpacity={0.8}
                 className={`flex-1 py-3 rounded-2xl border flex-row items-center justify-center gap-2 ${
                   activeTab === 'holidays'
-                    ? 'bg-[#0B140E] border-momentum-emerald'
+                    ? 'bg-[#000000] border-momentum-emerald'
                     : 'bg-momentum-card border-momentum-border'
                 }`}
               >
@@ -346,7 +429,7 @@ function TimetableScreen({ navigation }) {
                 </Text>
                 <View
                   className={`px-1.5 py-0.5 rounded-full ${
-                    activeTab === 'holidays' ? 'bg-[#0D241C]' : 'bg-[#18241B]'
+                    activeTab === 'holidays' ? 'bg-[#000000]' : 'bg-[#18241B]'
                   }`}
                 >
                   <Text
@@ -383,7 +466,7 @@ function TimetableScreen({ navigation }) {
         }}
         ListEmptyComponent={
           <View className="py-12 px-6 items-center justify-center bg-momentum-card border border-dashed border-momentum-border rounded-2xl my-2">
-            <View className="w-12 h-12 rounded-full bg-[#0D241C] items-center justify-center mb-3">
+            <View className="w-12 h-12 rounded-full bg-[#000000] items-center justify-center mb-3">
               {activeTab === 'workingDays' ? (
                 <Briefcase size={22} color="#00E676" strokeWidth={2.2} />
               ) : (
@@ -395,8 +478,8 @@ function TimetableScreen({ navigation }) {
             </Text>
             <Text className="text-xs text-momentum-textSecondary text-center max-w-[270px] mb-4 leading-4">
               {activeTab === 'workingDays'
-                ? 'Design your ideal Monday-to-Friday schedule or generate a 24-hour starter routine.'
-                : 'Structure your weekend goals, rejuvenation, and self-study blocks.'}
+                ? 'Design your ideal Monday-to-Friday schedule or generate a 12-hour blank routine (8 AM – 8 PM).'
+                : 'Structure your weekend goals, rejuvenation, and self-study blocks (8 AM – 8 PM).'}
             </Text>
             <TouchableOpacity
               onPress={handleGenerateTemplate}
@@ -406,7 +489,7 @@ function TimetableScreen({ navigation }) {
             >
               <Sparkles size={14} color="#000000" strokeWidth={2.5} />
               <Text className="text-xs font-bold text-black font-sans">
-                Generate 24h Template
+                Generate 12h Template
               </Text>
             </TouchableOpacity>
           </View>
@@ -418,7 +501,7 @@ function TimetableScreen({ navigation }) {
               setIsModalOpen(true);
             }}
             activeOpacity={0.8}
-            className="w-full py-3 rounded-2xl border border-momentum-emerald bg-[#09150D] flex-row items-center justify-center gap-2 mt-2"
+            className="w-full py-3 rounded-2xl border border-momentum-emerald bg-[#000000] flex-row items-center justify-center gap-2 mt-2"
           >
             <Plus size={16} color={colors.emerald.bright} strokeWidth={2.5} />
             <Text

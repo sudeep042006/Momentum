@@ -9,11 +9,11 @@ module.exports = {
     extend: {
       colors: {
         momentum: {
-          bg: "#060806",
-          surface: "#0B0F0C",
-          card: "#0D120F",
-          cardElevated: "#111713",
-          input: "#090D0A",
+          bg: "#000000",
+          surface: "#000000",
+          card: "#000000",
+          cardElevated: "#000000",
+          input: "#000000",
           border: "#18241B",
           borderLight: "#243629",
           emerald: "#00E676",
