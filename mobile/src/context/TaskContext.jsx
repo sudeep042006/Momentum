@@ -6,6 +6,7 @@ import { networkMonitor } from '../sync/networkMonitor';
 import { getTodayDateString } from '../utils/dateUtils';
 import { localStorage } from '../storage/localStorage';
 import { syncTasksToNotificationBar } from '../services/systemNotificationService';
+import { sortTasksChronologically } from '../utils/timeUtils';
 
 const TaskContext = createContext({
   tasks: [],
@@ -36,7 +37,7 @@ export function TaskProvider({ children }) {
       // 1. Instant Cache Read (0ms latency)
       const cached = await cacheManager.getTasks(date);
       if (cached && Array.isArray(cached)) {
-        setTasks(cached);
+        setTasks(sortTasksChronologically(cached));
       }
 
       // 2. Revalidate if online
@@ -44,8 +45,9 @@ export function TaskProvider({ children }) {
       if (isOnline) {
         const res = await taskApi.getTasks(date);
         const serverTasks = res.data?.data || [];
-        setTasks(serverTasks);
-        await cacheManager.setTasks(date, serverTasks);
+        const sorted = sortTasksChronologically(serverTasks);
+        setTasks(sorted);
+        await cacheManager.setTasks(date, sorted);
       }
     } catch (e) {
       console.warn('Task fetch error (using cached):', e.message);
@@ -95,9 +97,9 @@ export function TaskProvider({ children }) {
       status: 'pending',
     };
 
-    // Optimistic UI update using functional updater
+    // Optimistic UI update using functional updater with chronological sorting
     setTasks((prev) => {
-      const updated = [newTask, ...prev];
+      const updated = sortTasksChronologically([newTask, ...prev]);
       cacheManager.setTasks(today, updated);
       return updated;
     });
@@ -110,7 +112,9 @@ export function TaskProvider({ children }) {
         const serverTask = res.data?.data;
         if (serverTask) {
           setTasks((prev) => {
-            const reconciled = prev.map((t) => (t._id === tempId ? serverTask : t));
+            const reconciled = sortTasksChronologically(
+              prev.map((t) => (t._id === tempId ? serverTask : t))
+            );
             cacheManager.setTasks(today, reconciled);
             return reconciled;
           });

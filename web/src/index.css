@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-momentum-bg: #0a0f16;
-  --color-momentum-panel: #111827;
-  --color-momentum-border: #1e293b;
+  --color-momentum-bg: #000000;
+  --color-momentum-panel: #000000;
+  --color-momentum-border: #1a1a1a;
   --color-momentum-green: #10b981;
-  --color-momentum-green-bright: #22c55e;
-  --color-momentum-green-glow: #4ade80;
+  --color-momentum-green-bright: #34d399;
+  --color-momentum-green-glow: #34d399;
   --color-momentum-text-primary: #f8fafc;
   --color-momentum-text-secondary: #94a3b8;
 }

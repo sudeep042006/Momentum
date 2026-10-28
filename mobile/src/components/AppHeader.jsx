@@ -31,14 +31,15 @@ export default function AppHeader({ navigation, title, onProfilePress, onNotific
   const isPlaying = audio?.isPlaying;
   const isMuted = audio?.isMuted;
 
-  const name = user?.name || user?.user_metadata?.name || 'Sudeep';
+  const name = user?.name || user?.user_metadata?.name || 'Momentum User';
   const profilePic = user?.profilePic || user?.user_metadata?.profilePic;
   const initials = name
     .split(' ')
+    .filter(Boolean)
     .map((n) => n[0])
     .join('')
     .substring(0, 2)
-    .toUpperCase();
+    .toUpperCase() || 'MU';
 
   // Android punch hole & camera cutout safety:
   // Front camera punch holes on modern devices (Samsung, OnePlus, Asus, Xiaomi)

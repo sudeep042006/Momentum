@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, FlatList, TouchableOpacity, Text, RefreshControl } from 'react-native';
 import TodayHeader from './components/TodayHeader';
 import DailyQuoteCard from './components/DailyQuoteCard';
@@ -14,6 +14,8 @@ import { cacheManager } from '../../storage/cacheManager';
 import { localStorage } from '../../storage/localStorage';
 import { updateNativeWidget } from '../../services/systemNotificationService';
 import { useAudio } from '../../context/AudioContext';
+import { useTimer } from '../../context/TimerContext';
+import { sortTasksChronologically } from '../../utils/timeUtils';
 import { Plus, CheckSquare, Timer, Play } from 'lucide-react-native';
 
 const DAILY_QUOTE_CACHE_KEY = 'momentum_daily_quote_cache';
@@ -29,6 +31,21 @@ function HomeScreen({ navigation }) {
   } catch {
     activeTrack = null;
   }
+
+  let timerContext = null;
+  try {
+    timerContext = useTimer();
+  } catch {
+    timerContext = null;
+  }
+  const isTimerRunning = Boolean(timerContext?.isRunning);
+  const timerSession = timerContext?.currentSession || 1;
+  const timerTotalSessions = timerContext?.totalSessions || 3;
+  const timerTimeLeft = timerContext?.timeLeft || 0;
+  const timerIsBreak = Boolean(timerContext?.isBreak);
+  const timerMins = Math.floor(timerTimeLeft / 60);
+  const timerSecs = timerTimeLeft % 60;
+  const timerFormatted = `${timerMins < 10 ? '0' + timerMins : timerMins}:${timerSecs < 10 ? '0' + timerSecs : timerSecs}`;
   const [heatmapData, setHeatmapData] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -40,8 +57,9 @@ function HomeScreen({ navigation }) {
     category: 'DISCIPLINE',
   });
 
-  const name = user?.name || user?.user_metadata?.name || 'Sudeep';
+  const name = user?.name || user?.user_metadata?.name || 'Momentum User';
   const streak = user?.streak ?? user?.currentStreak ?? 0;
+
 
   const loadQuote = async () => {
     try {
@@ -127,11 +145,12 @@ function HomeScreen({ navigation }) {
 
   const completedCount = tasks.filter((t) => t.status === 'completed').length;
   const totalCount = tasks.length;
+  const sortedTasks = useMemo(() => sortTasksChronologically(tasks), [tasks]);
 
   return (
     <View className="flex-1 bg-momentum-bg">
       <FlatList
-        data={tasks}
+        data={sortedTasks}
         keyExtractor={(item) => item._id}
         contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         refreshControl={
@@ -169,22 +188,51 @@ function HomeScreen({ navigation }) {
             <TouchableOpacity
               onPress={() => navigation?.navigate?.('FocusPomodoro')}
               activeOpacity={0.8}
-              className="flex-row items-center justify-between p-3 rounded-2xl bg-[#00170A] border border-momentum-emerald/40 mt-1 mb-3.5"
+              className={`flex-row items-center justify-between p-3 rounded-2xl border mt-1 mb-3.5 ${
+                isTimerRunning
+                  ? 'bg-[#002210] border-momentum-emerald'
+                  : 'bg-[#00170A] border-momentum-emerald/40'
+              }`}
             >
-              <View className="flex-row items-center gap-2.5">
-                <View className="w-8 h-8 rounded-xl bg-[#002B13] border border-momentum-emerald items-center justify-center">
+              <View className="flex-row items-center gap-2.5 flex-1 mr-2">
+                <View
+                  className="w-8 h-8 rounded-xl items-center justify-center border"
+                  style={{
+                    backgroundColor: isTimerRunning ? '#00381B' : '#002B13',
+                    borderColor: '#00E676',
+                  }}
+                >
                   <Timer size={16} color="#00E676" strokeWidth={2.4} />
                 </View>
-                <View>
-                  <Text className="text-xs font-bold text-white">Pomodoro Focus Timer</Text>
-                  <Text className="text-[10px] font-mono text-momentum-emerald">
-                    {activeTrack?.title || 'Seven Floors Above'} &bull; Enter Flow State
+                <View className="flex-1">
+                  <Text className="text-xs font-bold text-white" numberOfLines={1}>
+                    {isTimerRunning
+                      ? timerIsBreak
+                        ? `☕ Rest Break (${timerSession}/${timerTotalSessions})`
+                        : `⏱️ Focus Session ${timerSession} of ${timerTotalSessions} Active`
+                      : 'Pomodoro Focus Timer (50m • 3 Sessions)'}
+                  </Text>
+                  <Text className="text-[10px] font-mono text-momentum-emerald" numberOfLines={1}>
+                    {isTimerRunning
+                      ? `${timerFormatted} remaining • Live in Notification Bar`
+                      : activeTrack?.title
+                      ? `${activeTrack.title} • Enter Flow State`
+                      : '50m Deep Work + 3 Sessions Cycle'}
                   </Text>
                 </View>
               </View>
               <View className="px-2.5 py-1 rounded-lg bg-momentum-emerald flex-row items-center gap-1">
-                <Play size={10} color="#000000" strokeWidth={3} style={{ marginLeft: 1 }} />
-                <Text className="text-[10px] font-bold text-black font-mono">FLOW</Text>
+                {isTimerRunning ? (
+                  <>
+                    <View className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
+                    <Text className="text-[10px] font-bold text-black font-mono">LIVE</Text>
+                  </>
+                ) : (
+                  <>
+                    <Play size={10} color="#000000" strokeWidth={3} style={{ marginLeft: 1 }} />
+                    <Text className="text-[10px] font-bold text-black font-mono">FLOW</Text>
+                  </>
+                )}
               </View>
             </TouchableOpacity>
 

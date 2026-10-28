@@ -1,19 +1,15 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
-  Vibration,
   StatusBar,
-  Platform,
-  Alert,
   Animated,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  ArrowLeft,
   Play,
   Pause,
   RotateCcw,
@@ -21,19 +17,17 @@ import {
   Music,
   Volume2,
   VolumeX,
-  Sliders,
-  Sparkles,
   Flame,
   CheckCircle2,
   Coffee,
   Brain,
   FolderOpen,
+  Layers,
 } from 'lucide-react-native';
 import AppHeader from '../../components/AppHeader';
 import MusicManagerModal from '../../components/MusicManagerModal';
 import { useAudio } from '../../context/AudioContext';
-import { localStorage } from '../../storage/localStorage';
-import { colors } from '../../theme/colors';
+import { useTimer } from '../../context/TimerContext';
 
 function LiveEqualizer({ isPlaying }) {
   const bar1 = useRef(new Animated.Value(0.3)).current;
@@ -115,13 +109,13 @@ function LiveEqualizer({ isPlaying }) {
 }
 
 const MODES = [
-  { id: 'focus25', label: 'Pomodoro', duration: 25 * 60, type: 'focus', title: 'Focus Sprint (25m)' },
-  { id: 'focus50', label: 'Deep Work', duration: 50 * 60, type: 'focus', title: 'Deep Work Block (50m)' },
-  { id: 'break5', label: 'Short Break', duration: 5 * 60, type: 'break', title: 'Rest & Hydrate (5m)' },
-  { id: 'break15', label: 'Long Break', duration: 15 * 60, type: 'break', title: 'Recharge Reset (15m)' },
+  { id: 'focus50', label: '50m Deep Work', duration: 50 * 60, type: 'focus', title: 'Deep Work Block (50m)' },
+  { id: 'focus25', label: '25m Pomodoro', duration: 25 * 60, type: 'focus', title: 'Focus Sprint (25m)' },
+  { id: 'focus90', label: '90m Flow', duration: 90 * 60, type: 'focus', title: 'Ultradian Flow (90m)' },
+  { id: 'break5', label: '5m Rest', duration: 5 * 60, type: 'break', title: 'Rest & Hydrate (5m)' },
 ];
 
-const STORAGE_KEY_POMODORO_STATS = 'momentum_pomodoro_stats_v1';
+const SESSION_PRESETS = [1, 2, 3, 4, 5];
 
 export default function FocusPomodoroScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -129,155 +123,48 @@ export default function FocusPomodoroScreen({ navigation }) {
     activeTrack,
     isPlaying: isAudioPlaying,
     isMuted,
-    volume,
     play: playAudio,
     pause: pauseAudio,
     toggleMute,
-    setVolume,
     autoPlayWithPomodoro,
   } = useAudio();
 
-  const [selectedMode, setSelectedMode] = useState(MODES[0]);
-  const [timeLeft, setTimeLeft] = useState(MODES[0].duration);
-  const [isRunning, setIsRunning] = useState(false);
-  const [cyclesCompleted, setCyclesCompleted] = useState(0);
-  const [totalFocusMinutesToday, setTotalFocusMinutesToday] = useState(0);
+  const {
+    duration,
+    breakDuration,
+    totalSessions,
+    currentSession,
+    timeLeft,
+    isRunning,
+    isBreak,
+    cyclesCompletedToday,
+    totalFocusMinutesToday,
+    startTimer,
+    pauseTimer,
+    resetTimer,
+    skipBlock,
+    setSessions,
+    setDuration,
+  } = useTimer();
+
   const [showMusicModal, setShowMusicModal] = useState(false);
 
-  const timerRef = useRef(null);
-
-  // Load daily focus stats
-  useEffect(() => {
-    (async () => {
-      try {
-        const todayKey = new Date().toISOString().split('T')[0];
-        const raw = await localStorage.getItem(STORAGE_KEY_POMODORO_STATS);
-        if (raw) {
-          const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-          if (parsed?.date === todayKey) {
-            setCyclesCompleted(parsed.cycles || 0);
-            setTotalFocusMinutesToday(parsed.focusMinutes || 0);
-          }
-        }
-      } catch (e) {
-        // Non-blocking
-      }
-    })();
-  }, []);
-
-  const saveDailyStats = async (newCycles, newMinutes) => {
-    try {
-      const todayKey = new Date().toISOString().split('T')[0];
-      const data = {
-        date: todayKey,
-        cycles: newCycles,
-        focusMinutes: newMinutes,
-      };
-      await localStorage.setItem(STORAGE_KEY_POMODORO_STATS, JSON.stringify(data));
-    } catch (e) {
-      // Non-blocking
-    }
-  };
-
-  // Timer Tick
-  useEffect(() => {
-    if (isRunning) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            handleSessionComplete();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [isRunning, selectedMode]);
-
-  // Handle session complete
-  const handleSessionComplete = useCallback(async () => {
-    setIsRunning(false);
-    if (Platform.OS === 'android') {
-      Vibration.vibrate([0, 500, 200, 500]);
-    }
-
-    if (selectedMode.type === 'focus') {
-      const focusMins = Math.round(selectedMode.duration / 60);
-      const nextCycles = cyclesCompleted + 1;
-      const nextTotalMins = totalFocusMinutesToday + focusMins;
-
-      setCyclesCompleted(nextCycles);
-      setTotalFocusMinutesToday(nextTotalMins);
-      await saveDailyStats(nextCycles, nextTotalMins);
-
-      Alert.alert(
-        '🎯 Flow Session Complete!',
-        `Great job! You conquered ${focusMins} minutes of uninterrupted focus. Ready for a well-deserved break?`,
-        [
-          { text: 'Later', style: 'cancel' },
-          {
-            text: 'Take 5m Break',
-            onPress: () => handleSelectMode(MODES[2]),
-          },
-        ]
-      );
-    } else {
-      Alert.alert(
-        '☕ Break Finished!',
-        'Recharged and ready to go? Start your next high-impact focus sprint!',
-        [
-          { text: 'Dismiss', style: 'cancel' },
-          {
-            text: 'Start Focus',
-            onPress: () => handleSelectMode(MODES[0]),
-          },
-        ]
-      );
-    }
-  }, [selectedMode, cyclesCompleted, totalFocusMinutesToday]);
-
   const handleSelectMode = (mode) => {
-    setIsRunning(false);
-    setSelectedMode(mode);
-    setTimeLeft(mode.duration);
+    if (mode.type === 'focus') {
+      setDuration(mode.duration);
+    }
   };
 
   const handleToggleTimer = async () => {
     if (!isRunning) {
-      // Starting session
-      setIsRunning(true);
+      startTimer();
       if (autoPlayWithPomodoro && !isAudioPlaying) {
         try {
           await playAudio(activeTrack?.id);
         } catch {}
       }
     } else {
-      // Pausing session
-      setIsRunning(false);
-    }
-  };
-
-  const handleResetTimer = () => {
-    setIsRunning(false);
-    setTimeLeft(selectedMode.duration);
-  };
-
-  const handleSkip = () => {
-    if (selectedMode.type === 'focus') {
-      handleSelectMode(MODES[2]); // switch to short break
-    } else {
-      handleSelectMode(MODES[0]); // switch back to pomodoro focus
+      pauseTimer();
     }
   };
 
@@ -289,11 +176,11 @@ export default function FocusPomodoroScreen({ navigation }) {
   // SVG Progress circle calculations
   const radius = 100;
   const circumference = 2 * Math.PI * radius;
-  const progressFraction = timeLeft / selectedMode.duration;
+  const currentTotalDuration = isBreak ? breakDuration : duration;
+  const progressFraction = Math.max(0, Math.min(1, timeLeft / currentTotalDuration));
   const strokeDashoffset = circumference * (1 - progressFraction);
 
-  const isFocusMode = selectedMode.type === 'focus';
-  const ringColor = isFocusMode ? '#00E676' : '#38BDF8';
+  const ringColor = isBreak ? '#38BDF8' : '#00E676';
 
   return (
     <View className="flex-1 bg-black">
@@ -309,9 +196,9 @@ export default function FocusPomodoroScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         {/* Mode Selector Chips */}
-        <View className="flex-row items-center justify-between p-1 rounded-2xl bg-[#0A100C] border border-[#16251A] mb-6">
+        <View className="flex-row items-center justify-between p-1 rounded-2xl bg-[#0A100C] border border-[#16251A] mb-3">
           {MODES.map((mode) => {
-            const isSelected = selectedMode.id === mode.id;
+            const isSelected = !isBreak && duration === mode.duration;
             return (
               <TouchableOpacity
                 key={mode.id}
@@ -322,7 +209,7 @@ export default function FocusPomodoroScreen({ navigation }) {
                 }`}
               >
                 <Text
-                  className={`text-[11px] font-bold ${
+                  className={`text-[10.5px] font-bold ${
                     isSelected ? 'text-momentum-emerald' : 'text-momentum-textSecondary'
                   }`}
                 >
@@ -333,8 +220,74 @@ export default function FocusPomodoroScreen({ navigation }) {
           })}
         </View>
 
+        {/* Multi-Session Selector Pill Bar */}
+        <View className="p-3 rounded-2xl bg-[#0A100C] border border-[#16251A] mb-4">
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-row items-center gap-1.5">
+              <Layers size={13} color="#00E676" />
+              <Text className="text-[11px] font-mono uppercase tracking-wider text-momentum-textSecondary font-bold">
+                Sessions Cycle
+              </Text>
+            </View>
+            <Text className="text-[11px] font-mono font-bold text-momentum-emerald">
+              Session {currentSession} of {totalSessions}
+            </Text>
+          </View>
+
+          {/* Session Count Selector (1 to 5) */}
+          <View className="flex-row items-center gap-2">
+            {SESSION_PRESETS.map((count) => {
+              const isSelected = totalSessions === count;
+              return (
+                <TouchableOpacity
+                  key={count}
+                  onPress={() => setSessions(count)}
+                  activeOpacity={0.8}
+                  className={`flex-1 py-1.5 rounded-xl items-center justify-center border ${
+                    isSelected
+                      ? 'bg-[#00381B] border-momentum-emerald'
+                      : 'bg-[#000000] border-[#1C2C20]'
+                  }`}
+                >
+                  <Text
+                    className={`text-xs font-mono font-bold ${
+                      isSelected ? 'text-momentum-emerald' : 'text-[#8E9C92]'
+                    }`}
+                  >
+                    {count} {count === 1 ? 'Session' : 'Sessions'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Visual Session Pills Display */}
+          <View className="flex-row items-center gap-2 mt-2.5">
+            {Array.from({ length: totalSessions }).map((_, idx) => {
+              const sessionIndex = idx + 1;
+              const isDone = sessionIndex < currentSession;
+              const isCurrent = sessionIndex === currentSession;
+
+              return (
+                <View
+                  key={idx}
+                  className="flex-1 h-2 rounded-full overflow-hidden"
+                  style={{
+                    backgroundColor: isDone
+                      ? '#00E676'
+                      : isCurrent
+                      ? (isBreak ? '#38BDF8' : '#00E676')
+                      : '#16251A',
+                    opacity: isCurrent ? 1 : isDone ? 0.8 : 0.4,
+                  }}
+                />
+              );
+            })}
+          </View>
+        </View>
+
         {/* Circular Countdown Ring */}
-        <View className="items-center justify-center my-3 relative">
+        <View className="items-center justify-center my-2 relative">
           <Svg width={240} height={240} viewBox="0 0 240 240">
             {/* Background Track */}
             <Circle
@@ -363,7 +316,7 @@ export default function FocusPomodoroScreen({ navigation }) {
           {/* Center Digital Display */}
           <View className="absolute items-center justify-center">
             <View className="flex-row items-center gap-1.5 mb-1">
-              {isFocusMode ? (
+              {!isBreak ? (
                 <Brain size={15} color="#00E676" strokeWidth={2.4} />
               ) : (
                 <Coffee size={15} color="#38BDF8" strokeWidth={2.4} />
@@ -372,7 +325,9 @@ export default function FocusPomodoroScreen({ navigation }) {
                 className="text-[10px] font-mono uppercase tracking-widest font-bold"
                 style={{ color: ringColor }}
               >
-                {selectedMode.type === 'focus' ? 'FLOW SESSION' : 'REST & RECHARGE'}
+                {!isBreak
+                  ? `SESSION ${currentSession}/${totalSessions} FLOW`
+                  : `SESSION ${currentSession}/${totalSessions} REST`}
               </Text>
             </View>
 
@@ -383,29 +338,23 @@ export default function FocusPomodoroScreen({ navigation }) {
               {timeFormatted}
             </Text>
 
-            {/* Cycle indicator dots */}
-            <View className="flex-row items-center gap-1.5 mt-2">
-              {[1, 2, 3, 4].map((dot) => {
-                const filled = dot <= (cyclesCompleted % 4 || (cyclesCompleted > 0 ? 4 : 0));
-                return (
-                  <View
-                    key={dot}
-                    className={`w-2 h-2 rounded-full border ${
-                      filled
-                        ? 'bg-momentum-emerald border-momentum-emerald'
-                        : 'bg-[#101C14] border-[#1C2C20]'
-                    }`}
-                  />
-                );
-              })}
+            {/* Notification Bar Status Pill */}
+            <View className="flex-row items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded-full bg-[#00170A] border border-momentum-emerald/40">
+              <View
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: isRunning ? '#00E676' : '#8E9C92' }}
+              />
+              <Text className="text-[9.5px] font-mono text-momentum-emerald font-semibold">
+                {isRunning ? 'LIVE IN NOTIFICATION BAR' : 'READY TO START'}
+              </Text>
             </View>
           </View>
         </View>
 
         {/* Primary Timer Controls */}
-        <View className="flex-row items-center justify-center gap-4 my-6">
+        <View className="flex-row items-center justify-center gap-4 my-5">
           <TouchableOpacity
-            onPress={handleResetTimer}
+            onPress={resetTimer}
             activeOpacity={0.75}
             className="w-12 h-12 rounded-full bg-[#0E1611] border border-[#1C2C20] items-center justify-center"
           >
@@ -428,14 +377,16 @@ export default function FocusPomodoroScreen({ navigation }) {
               <>
                 <Play size={18} color="#000000" strokeWidth={3} style={{ marginLeft: 2 }} />
                 <Text className="text-sm font-black text-black font-mono tracking-wider">
-                  START FOCUS
+                  {!isBreak
+                    ? `START SESSION ${currentSession}/${totalSessions}`
+                    : `START REST BREAK`}
                 </Text>
               </>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={handleSkip}
+            onPress={skipBlock}
             activeOpacity={0.75}
             className="w-12 h-12 rounded-full bg-[#0E1611] border border-[#1C2C20] items-center justify-center"
           >
@@ -576,7 +527,7 @@ export default function FocusPomodoroScreen({ navigation }) {
               </Text>
             </View>
             <Text className="text-xl font-black text-white font-mono">
-              {cyclesCompleted} <Text className="text-xs text-momentum-textMuted font-sans">sprints</Text>
+              {cyclesCompletedToday} <Text className="text-xs text-momentum-textMuted font-sans">sprints</Text>
             </Text>
           </View>
         </View>

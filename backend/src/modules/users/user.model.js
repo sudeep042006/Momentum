@@ -20,7 +20,15 @@ const UserProfileSchema = new mongoose.Schema({
     },
     tagline: {
         type: String,
-        default: "Builder • Learner • Thinker"
+        default: "Consistent • Focused • Relentless"
+    },
+    bio: {
+        type: String,
+        default: ""
+    },
+    location: {
+        type: String,
+        default: ""
     },
     followers: [{
         type: String

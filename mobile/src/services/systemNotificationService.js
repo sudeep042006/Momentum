@@ -1,4 +1,5 @@
 import { NativeModules, Platform, PermissionsAndroid, DeviceEventEmitter } from 'react-native';
+import { sortTasksChronologically } from '../utils/timeUtils';
 
 const { NotificationBarModule } = NativeModules;
 
@@ -263,8 +264,9 @@ export async function syncTasksToNotificationBar(tasks = []) {
     const hasPermission = await requestNotificationPermission();
     if (!hasPermission) return;
 
-    const completedCount = tasks.filter((t) => t.status === 'completed').length;
-    const totalCount = tasks.length;
+    const sorted = sortTasksChronologically(tasks);
+    const completedCount = sorted.filter((t) => t.status === 'completed').length;
+    const totalCount = sorted.length;
     const remainingCount = totalCount - completedCount;
 
     const title = `📋 Today's Tasks (${completedCount}/${totalCount} Done)`;
@@ -273,8 +275,8 @@ export async function syncTasksToNotificationBar(tasks = []) {
         ? 'All tasks completed! Unstoppable momentum.'
         : `${remainingCount} task${remainingCount > 1 ? 's' : ''} remaining today`;
 
-    // Map tasks to simple serializable objects for native code
-    const taskItems = tasks.slice(0, 10).map((t) => ({
+    // Map tasks to simple serializable objects for native code (sorted chronologically AM -> PM)
+    const taskItems = sorted.slice(0, 10).map((t) => ({
       title: t.title || 'Untitled task',
       status: t.status || 'pending',
     }));
@@ -306,4 +308,50 @@ export function cancelTasksNotification() {
     // Non-blocking
   }
 }
+
+/**
+ * Syncs the active timer / session countdown to Android's top notification bar
+ */
+export async function syncTimerToNotificationBar(
+  title,
+  summary,
+  targetEndTimeMillis,
+  isRunning,
+  currentSession = 1,
+  totalSessions = 3
+) {
+  if (Platform.OS !== 'android' || !NotificationBarModule) return;
+  try {
+    const hasPermission = await requestNotificationPermission();
+    if (!hasPermission) return;
+
+    if (typeof NotificationBarModule.showTimerNotification === 'function') {
+      NotificationBarModule.showTimerNotification(
+        title,
+        summary,
+        targetEndTimeMillis,
+        Boolean(isRunning),
+        currentSession,
+        totalSessions
+      );
+    }
+  } catch (err) {
+    // Non-blocking
+  }
+}
+
+/**
+ * Dismisses the timer notification from the top bar
+ */
+export function cancelTimerNotification() {
+  if (Platform.OS !== 'android' || !NotificationBarModule) return;
+  try {
+    if (typeof NotificationBarModule.cancelTimerNotification === 'function') {
+      NotificationBarModule.cancelTimerNotification();
+    }
+  } catch (err) {
+    // Non-blocking
+  }
+}
+
 
