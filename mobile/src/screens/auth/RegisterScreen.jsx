@@ -80,7 +80,7 @@ export default function RegisterScreen({ navigation }) {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className="flex-1 bg-black relative"
     >
       <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
@@ -122,6 +122,8 @@ export default function RegisterScreen({ navigation }) {
           paddingBottom: 30,
         }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
         className="px-6 bg-black"
       >
         <Animated.View style={{ opacity: formFade }}>

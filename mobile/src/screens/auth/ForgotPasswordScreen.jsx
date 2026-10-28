@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -65,10 +65,10 @@ export default function ForgotPasswordScreen({ navigation }) {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className="flex-1 bg-[#000000] relative"
     >
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
 
       {/* Ambient Animated Glow */}
       <Animated.View
@@ -94,6 +94,8 @@ export default function ForgotPasswordScreen({ navigation }) {
           paddingBottom: 30,
         }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
         className="px-6"
       >
         <Animated.View style={{ opacity: formFade }}>

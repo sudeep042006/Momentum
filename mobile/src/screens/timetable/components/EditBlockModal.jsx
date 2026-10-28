@@ -97,7 +97,7 @@ export default function EditBlockModal({ visible, initialData = null, onClose, o
       {/* Single Root Container for Modal ensures exact full-screen coordinates on Android */}
       <View style={{ flex: 1 }}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}
         >
           <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0, 0, 0, 0.75)' }}>
