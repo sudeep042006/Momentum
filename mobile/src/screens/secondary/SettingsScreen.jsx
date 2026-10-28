@@ -1,18 +1,69 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Alert, ScrollView, Switch } from 'react-native';
 import AppHeader from '../../components/AppHeader';
 import SyncStatusBar from '../../components/SyncStatusBar';
+import MusicManagerModal from '../../components/MusicManagerModal';
 import { PRIMARY_API_URL, FALLBACK_API_URL } from '../../api/apiClient';
 import { syncQueue } from '../../storage/syncQueue';
 import { localStorage } from '../../storage/localStorage';
 import { useSync } from '../../context/SyncContext';
+import { useAudio } from '../../context/AudioContext';
+import { useTasks } from '../../context/TaskContext';
+import { syncTasksToNotificationBar, cancelTasksNotification } from '../../services/systemNotificationService';
 import { syncEngine } from '../../sync/syncEngine';
-import { Server, Database, Trash2, RefreshCw } from 'lucide-react-native';
+import {
+  Server,
+  Database,
+  Trash2,
+  RefreshCw,
+  Music,
+  Volume2,
+  VolumeX,
+  Timer,
+  FolderOpen,
+  ChevronRight,
+  Play,
+  Pause,
+  Sliders,
+} from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 
 export default function SettingsScreen({ navigation }) {
   const { isOnline, pendingCount } = useSync();
+  const {
+    showNavbarMusic,
+    setShowNavbarMusic,
+    autoPlayWithPomodoro,
+    setAutoPlayWithPomodoro,
+    activeTrack,
+    isPlaying,
+    isMuted,
+    togglePlay,
+    toggleMute,
+    allTracks,
+    customTracks,
+  } = useAudio();
+
+  const { tasks } = useTasks();
   const [clearing, setClearing] = useState(false);
+  const [showMusicModal, setShowMusicModal] = useState(false);
+  const [showTasksInNotif, setShowTasksInNotif] = useState(true);
+
+  useEffect(() => {
+    localStorage.getItem('momentum_notif_tasks_enabled').then((val) => {
+      if (val !== null) setShowTasksInNotif(val === 'true');
+    });
+  }, []);
+
+  const handleToggleTasksNotif = async (val) => {
+    setShowTasksInNotif(val);
+    await localStorage.setItem('momentum_notif_tasks_enabled', String(val));
+    if (val) {
+      syncTasksToNotificationBar(tasks);
+    } else {
+      cancelTasksNotification();
+    }
+  };
 
   const handleClearCache = async () => {
     Alert.alert(
@@ -56,8 +107,165 @@ export default function SettingsScreen({ navigation }) {
       <SyncStatusBar />
 
       <ScrollView contentContainerStyle={{ padding: 16 }}>
-        <Text className="text-xs uppercase tracking-wider font-semibold text-momentum-textSecondary mb-2">
-          Backend & Network
+        {/* FOCUS MODE & AMBIENT MUSIC */}
+        <Text className="text-xs uppercase tracking-wider font-semibold text-momentum-emerald mb-2 font-mono">
+          Focus Mode &amp; Soundtracks
+        </Text>
+        <View className="p-4 mb-5 rounded-2xl bg-momentum-card border border-[#18241B]">
+          {/* Active Soundscape Card */}
+          <View className="p-3.5 rounded-xl bg-[#001D0E] border border-momentum-emerald/40 mb-3.5">
+            <View className="flex-row items-center justify-between mb-1.5">
+              <View className="flex-row items-center gap-2">
+                <Music size={15} color="#00E676" strokeWidth={2.4} />
+                <Text className="text-[11px] font-mono font-bold text-momentum-emerald uppercase tracking-wider">
+                  Active Focus Audio
+                </Text>
+              </View>
+              {isPlaying && (
+                <View className="flex-row items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/60 border border-momentum-emerald">
+                  <View className="w-1.5 h-1.5 rounded-full bg-momentum-emerald" />
+                  <Text className="text-[9px] font-mono text-momentum-emerald font-bold">PLAYING</Text>
+                </View>
+              )}
+            </View>
+
+            <Text numberOfLines={1} className="text-sm font-bold text-white mb-0.5">
+              {activeTrack?.title || 'Seven Floors Above'}
+            </Text>
+            <Text numberOfLines={1} className="text-[11px] text-momentum-textSecondary mb-3">
+              {activeTrack?.category || 'Lofi Ambient'} &bull; {activeTrack?.author || 'Momentum'}
+            </Text>
+
+            <View className="flex-row items-center gap-2">
+              <TouchableOpacity
+                onPress={togglePlay}
+                activeOpacity={0.8}
+                className="flex-1 py-2 px-3 rounded-lg bg-momentum-emerald flex-row items-center justify-center gap-1.5"
+              >
+                {isPlaying ? (
+                  <>
+                    <Pause size={14} color="#000000" strokeWidth={2.8} />
+                    <Text className="text-xs font-bold text-black font-mono">PAUSE</Text>
+                  </>
+                ) : (
+                  <>
+                    <Play size={14} color="#000000" strokeWidth={2.8} style={{ marginLeft: 2 }} />
+                    <Text className="text-xs font-bold text-black font-mono">PLAY TRACK</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={toggleMute}
+                activeOpacity={0.8}
+                className="py-2 px-3 rounded-lg bg-[#0E1611] border border-[#1C2C20] flex-row items-center gap-1.5"
+              >
+                {isMuted ? (
+                  <>
+                    <VolumeX size={15} color="#8E9C92" strokeWidth={2.2} />
+                    <Text className="text-[11px] font-mono font-bold text-momentum-textSecondary">UNMUTE</Text>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 size={15} color="#00E676" strokeWidth={2.2} />
+                    <Text className="text-[11px] font-mono font-bold text-momentum-emerald">MUTE</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Button: Open Audio Library (+ Add Music from Device) */}
+          <TouchableOpacity
+            onPress={() => setShowMusicModal(true)}
+            activeOpacity={0.8}
+            className="flex-row items-center justify-between p-3 rounded-xl bg-[#0A0F0C] border border-[#1C2C20] mb-3"
+          >
+            <View className="flex-row items-center gap-3">
+              <View className="w-8 h-8 rounded-lg bg-[#142318] items-center justify-center border border-[#1E3A25]">
+                <FolderOpen size={16} color="#00E676" strokeWidth={2.2} />
+              </View>
+              <View>
+                <Text className="text-xs font-bold text-white">Audio Library &amp; Custom Music</Text>
+                <Text className="text-[10.5px] text-momentum-textSecondary">
+                  {allTracks.length} tracks available ({customTracks.length} custom from device)
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color={colors.text.muted} />
+          </TouchableOpacity>
+
+          {/* Button: Launch Pomodoro Focus Mode */}
+          <TouchableOpacity
+            onPress={() => navigation?.navigate?.('FocusPomodoro')}
+            activeOpacity={0.8}
+            className="flex-row items-center justify-between p-3 rounded-xl bg-[#0A0F0C] border border-[#1C2C20] mb-3"
+          >
+            <View className="flex-row items-center gap-3">
+              <View className="w-8 h-8 rounded-lg bg-[#002A14] items-center justify-center border border-momentum-emerald/40">
+                <Timer size={16} color="#00E676" strokeWidth={2.4} />
+              </View>
+              <View>
+                <Text className="text-xs font-bold text-white">Open Pomodoro Focus Mode</Text>
+                <Text className="text-[10.5px] text-momentum-textSecondary">
+                  Timer with synchronized ambient focus music
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color={colors.text.muted} />
+          </TouchableOpacity>
+
+          {/* Toggle: Show Music Icon on Navbar */}
+          <View className="flex-row items-center justify-between pt-3 pb-1 border-t border-[#18241B]">
+            <View className="flex-1 mr-3">
+              <Text className="text-xs font-bold text-white">Show Music in Navigation Bar</Text>
+              <Text className="text-[10.5px] text-momentum-textSecondary mt-0.5">
+                Displays quick mute/unmute audio pill on top navbar across screens
+              </Text>
+            </View>
+            <Switch
+              value={showNavbarMusic}
+              onValueChange={setShowNavbarMusic}
+              trackColor={{ false: '#18241B', true: '#00E676' }}
+              thumbColor={showNavbarMusic ? '#000000' : '#8E9C92'}
+            />
+          </View>
+
+          {/* Toggle: Auto-play with Pomodoro */}
+          <View className="flex-row items-center justify-between pt-3 border-t border-[#18241B] mt-2">
+            <View className="flex-1 mr-3">
+              <Text className="text-xs font-bold text-white">Auto-Play with Pomodoro</Text>
+              <Text className="text-[10.5px] text-momentum-textSecondary mt-0.5">
+                Automatically start music when Pomodoro session begins
+              </Text>
+            </View>
+            <Switch
+              value={autoPlayWithPomodoro}
+              onValueChange={setAutoPlayWithPomodoro}
+              trackColor={{ false: '#18241B', true: '#00E676' }}
+              thumbColor={autoPlayWithPomodoro ? '#000000' : '#8E9C92'}
+            />
+          </View>
+
+          {/* Toggle: Show Tasks in Notification Bar */}
+          <View className="flex-row items-center justify-between pt-3 border-t border-[#18241B] mt-2">
+            <View className="flex-1 mr-3">
+              <Text className="text-xs font-bold text-white">Show Tasks in Notification Bar</Text>
+              <Text className="text-[10.5px] text-momentum-textSecondary mt-0.5">
+                Displays today's active checklist in your phone's notification bar
+              </Text>
+            </View>
+            <Switch
+              value={showTasksInNotif}
+              onValueChange={handleToggleTasksNotif}
+              trackColor={{ false: '#18241B', true: '#00E676' }}
+              thumbColor={showTasksInNotif ? '#000000' : '#8E9C92'}
+            />
+          </View>
+        </View>
+
+        <Text className="text-xs uppercase tracking-wider font-semibold text-momentum-textSecondary mb-2 font-mono">
+          Backend &amp; Network
         </Text>
         <View className="p-4 mb-4 rounded-xl bg-momentum-card border border-momentum-border">
           <View className="flex-row items-center gap-2 mb-2">
@@ -136,6 +344,11 @@ export default function SettingsScreen({ navigation }) {
           </Text>
         </View>
       </ScrollView>
+
+      <MusicManagerModal
+        visible={showMusicModal}
+        onClose={() => setShowMusicModal(false)}
+      />
     </View>
   );
 }

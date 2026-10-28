@@ -17,6 +17,16 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="http" />
         </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="application/vnd.android.package-archive" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.INSTALL_PACKAGE" />
+            <data android:mimeType="application/vnd.android.package-archive" />
+        </intent>
+        <package android:name="com.google.android.packageinstaller" />
+        <package android:name="com.android.packageinstaller" />
     </queries>
 
     <application
@@ -58,10 +68,22 @@
         android:exported="true">
         <intent-filter>
             <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            <action android:name="com.mobile.ACTION_CYCLE_WIDGET_QUOTE" />
         </intent-filter>
         <meta-data
             android:name="android.appwidget.provider"
             android:resource="@xml/momentum_widget_info" />
+      </receiver>
+
+      <!-- Music Notification Bar Controls Receiver (Stop, Toggle, Mute) -->
+      <receiver
+        android:name=".FocusAudioActionReceiver"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="com.mobile.ACTION_AUDIO_TOGGLE" />
+            <action android:name="com.mobile.ACTION_AUDIO_MUTE" />
+            <action android:name="com.mobile.ACTION_AUDIO_STOP" />
+        </intent-filter>
       </receiver>
     </application>
 </manifest>

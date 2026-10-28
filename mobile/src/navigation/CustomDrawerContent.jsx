@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +20,8 @@ import {
   ChevronRight,
   X,
   Bell,
+  Timer,
+  Music,
 } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useNotifications } from '../context/NotificationContext';
@@ -266,6 +268,25 @@ export default function CustomDrawerContent({ navigation, state }) {
         >
           Core Features
         </Text>
+
+        <TouchableOpacity
+          onPress={() => navigateToScreen('FocusPomodoro')}
+          className="flex-row items-center justify-between px-3 py-2.5 rounded-xl mb-1 bg-[#001D0E] border border-momentum-emerald/40"
+        >
+          <View className="flex-row items-center gap-3 flex-1 mr-2">
+            <Timer size={16} color="#00E676" strokeWidth={2.4} />
+            <Text
+              numberOfLines={1}
+              allowFontScaling={false}
+              className="text-xs font-bold text-white flex-1"
+            >
+              Focus &amp; Pomodoro
+            </Text>
+          </View>
+          <View className="px-1.5 py-0.5 rounded bg-momentum-emerald/20 border border-momentum-emerald/40">
+            <Text className="text-[9px] font-mono font-bold text-momentum-emerald">AUDIO</Text>
+          </View>
+        </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => navigateToTab('Home')}

@@ -6,6 +6,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { TaskProvider } from './src/context/TaskContext';
 import { SyncProvider } from './src/context/SyncContext';
 import { NotificationProvider, useNotifications } from './src/context/NotificationContext';
+import { AudioProvider } from './src/context/AudioContext';
 import UpdateModal from './src/components/UpdateModal';
 import { checkForAppUpdate } from './src/services/updateService';
 import {
@@ -13,6 +14,7 @@ import {
   addNotificationClickListener,
   requestNotificationPermission,
 } from './src/services/systemNotificationService';
+import LandingSplashScreen from './src/components/LandingSplashScreen';
 
 function AppContent() {
   const [updateInfo, setUpdateInfo] = useState(null);
@@ -42,10 +44,12 @@ function AppContent() {
       navigateGlobal('Milestones');
     } else if (actionType === 'TASKS') {
       navigateGlobal('MainTabs');
+    } else if (actionType === 'POMODORO') {
+      navigateGlobal('FocusPomodoro');
     } else if (actionType === 'NOTIFICATIONS') {
       navigateGlobal('Notifications');
     } else {
-      navigateGlobal('Notifications');
+      navigateGlobal('MainTabs');
     }
   };
 
@@ -136,14 +140,21 @@ function AppContent() {
 }
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
       <AuthProvider>
         <SyncProvider>
           <TaskProvider>
             <NotificationProvider>
-              <AppContent />
+              <AudioProvider>
+                <AppContent />
+                {showSplash && (
+                  <LandingSplashScreen onFinish={() => setShowSplash(false)} />
+                )}
+              </AudioProvider>
             </NotificationProvider>
           </TaskProvider>
         </SyncProvider>

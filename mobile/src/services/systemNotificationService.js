@@ -147,6 +147,58 @@ export async function cancelApkDownloadDirect() {
 }
 
 /**
+ * Directly launches the system installer for the downloaded APK
+ */
+export async function installDownloadedApkDirect() {
+  if (Platform.OS !== 'android') return false;
+
+  if (NotificationBarModule && typeof NotificationBarModule.installDownloadedApk === 'function') {
+    try {
+      const res = await NotificationBarModule.installDownloadedApk();
+      return res;
+    } catch (err) {
+      console.warn('Native installDownloadedApk failed:', err);
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
+ * Checks if the app is permitted to install unknown apps (Android 8+)
+ */
+export async function canInstallUnknownAppsDirect() {
+  if (Platform.OS !== 'android') return true;
+
+  if (NotificationBarModule && typeof NotificationBarModule.canInstallUnknownApps === 'function') {
+    try {
+      return await NotificationBarModule.canInstallUnknownApps();
+    } catch (err) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Opens system settings page for "Install unknown apps"
+ */
+export async function openUnknownAppsSettingsDirect() {
+  if (Platform.OS !== 'android') return false;
+
+  if (NotificationBarModule && typeof NotificationBarModule.openUnknownAppsSettings === 'function') {
+    try {
+      await NotificationBarModule.openUnknownAppsSettings();
+      return true;
+    } catch (err) {
+      console.warn('Native openUnknownAppsSettings failed:', err);
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
  * Listens for in-app download progress (0 to 100%)
  */
 export function addDownloadProgressListener(callback) {
@@ -163,13 +215,21 @@ export function addDownloadProgressListener(callback) {
  * Returns native app version and build code
  */
 export async function getNativeAppVersion() {
+  let fallbackVersion = '1.12';
+  try {
+    const { CURRENT_APP_VERSION } = require('./updateService');
+    if (CURRENT_APP_VERSION) {
+      fallbackVersion = CURRENT_APP_VERSION.replace(/^v/i, '');
+    }
+  } catch {}
+
   if (Platform.OS !== 'android' || !NotificationBarModule) {
-    return { versionName: '1.1', versionCode: 2 };
+    return { versionName: fallbackVersion, versionCode: 12 };
   }
   try {
     return await NotificationBarModule.getAppVersion();
   } catch (err) {
-    return { versionName: '1.1', versionCode: 2 };
+    return { versionName: fallbackVersion, versionCode: 12 };
   }
 }
 
@@ -186,3 +246,64 @@ export async function updateNativeWidget(quote, author, streak = 1) {
     // Non-blocking
   }
 }
+
+/**
+ * Syncs the user's today tasks to the top notification bar
+ */
+export async function syncTasksToNotificationBar(tasks = []) {
+  if (Platform.OS !== 'android' || !NotificationBarModule) return;
+  try {
+    if (!tasks || tasks.length === 0) {
+      if (typeof NotificationBarModule.cancelTasksNotification === 'function') {
+        NotificationBarModule.cancelTasksNotification();
+      }
+      return;
+    }
+
+    const hasPermission = await requestNotificationPermission();
+    if (!hasPermission) return;
+
+    const completedCount = tasks.filter((t) => t.status === 'completed').length;
+    const totalCount = tasks.length;
+    const remainingCount = totalCount - completedCount;
+
+    const title = `📋 Today's Tasks (${completedCount}/${totalCount} Done)`;
+    const summary =
+      remainingCount === 0
+        ? 'All tasks completed! Unstoppable momentum.'
+        : `${remainingCount} task${remainingCount > 1 ? 's' : ''} remaining today`;
+
+    // Map tasks to simple serializable objects for native code
+    const taskItems = tasks.slice(0, 10).map((t) => ({
+      title: t.title || 'Untitled task',
+      status: t.status || 'pending',
+    }));
+
+    if (typeof NotificationBarModule.showTasksNotification === 'function') {
+      NotificationBarModule.showTasksNotification(
+        title,
+        summary,
+        taskItems,
+        completedCount,
+        totalCount
+      );
+    }
+  } catch (err) {
+    // Non-blocking fail-safe
+  }
+}
+
+/**
+ * Dismisses the tasks notification from the top bar
+ */
+export function cancelTasksNotification() {
+  if (Platform.OS !== 'android' || !NotificationBarModule) return;
+  try {
+    if (typeof NotificationBarModule.cancelTasksNotification === 'function') {
+      NotificationBarModule.cancelTasksNotification();
+    }
+  } catch (err) {
+    // Non-blocking
+  }
+}
+

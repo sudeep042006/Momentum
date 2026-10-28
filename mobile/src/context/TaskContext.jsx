@@ -1,9 +1,11 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { cacheManager } from '../storage/cacheManager';
 import { syncQueue } from '../storage/syncQueue';
 import { taskApi } from '../api/taskApi';
 import { networkMonitor } from '../sync/networkMonitor';
 import { getTodayDateString } from '../utils/dateUtils';
+import { localStorage } from '../storage/localStorage';
+import { syncTasksToNotificationBar } from '../services/systemNotificationService';
 
 const TaskContext = createContext({
   tasks: [],
@@ -18,6 +20,15 @@ const TaskContext = createContext({
 export function TaskProvider({ children }) {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Automatically keep Android's top notification bar synced with today's tasks
+  useEffect(() => {
+    localStorage.getItem('momentum_notif_tasks_enabled').then((val) => {
+      if (val === null || val === 'true') {
+        syncTasksToNotificationBar(tasks);
+      }
+    });
+  }, [tasks]);
 
   const fetchTasks = useCallback(async (date = getTodayDateString()) => {
     setIsLoading(true);

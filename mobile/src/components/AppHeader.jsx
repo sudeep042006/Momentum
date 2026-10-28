@@ -1,10 +1,11 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, Image, Platform, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Menu, Bell, ArrowLeft } from 'lucide-react-native';
+import { Menu, Bell, ArrowLeft, Volume2, VolumeX, Music } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
+import { useAudio } from '../context/AudioContext';
 import { colors } from '../theme/colors';
 
 export default function AppHeader({ navigation, title, onProfilePress, onNotificationPress }) {
@@ -18,6 +19,17 @@ export default function AppHeader({ navigation, title, onProfilePress, onNotific
   } catch {
     unreadCount = 0;
   }
+
+  let audio = null;
+  try {
+    audio = useAudio();
+  } catch {
+    audio = null;
+  }
+
+  const showNavbarMusic = audio?.showNavbarMusic;
+  const isPlaying = audio?.isPlaying;
+  const isMuted = audio?.isMuted;
 
   const name = user?.name || user?.user_metadata?.name || 'Sudeep';
   const profilePic = user?.profilePic || user?.user_metadata?.profilePic;
@@ -49,7 +61,13 @@ export default function AppHeader({ navigation, title, onProfilePress, onNotific
         {title ? (
           <View className="flex-row items-center gap-3">
             <TouchableOpacity
-              onPress={() => navigation?.goBack?.()}
+              onPress={() => {
+                if (navigation?.canGoBack?.()) {
+                  navigation.goBack();
+                } else if (navigation?.navigate) {
+                  navigation.navigate('MainTabs');
+                }
+              }}
               activeOpacity={0.7}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               className="p-1 -ml-1"
@@ -93,8 +111,61 @@ export default function AppHeader({ navigation, title, onProfilePress, onNotific
           </View>
         )}
 
-        {/* Right: Notifications Bell + Avatar */}
-        <View className="flex-row items-center gap-3">
+        {/* Right: Music Icon + Notifications Bell + Avatar */}
+        <View className="flex-row items-center gap-2.5">
+          {showNavbarMusic && (
+            <TouchableOpacity
+              onPress={() => {
+                if (!isPlaying) {
+                  audio?.play?.();
+                } else {
+                  audio?.toggleMute?.();
+                }
+              }}
+              onLongPress={() => {
+                navigation?.navigate?.('FocusPomodoro');
+              }}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              className="flex-row items-center gap-1.5 px-2.5 py-1 rounded-full border"
+              style={{
+                backgroundColor:
+                  isPlaying && !isMuted
+                    ? '#002A14'
+                    : isPlaying && isMuted
+                    ? '#141B16'
+                    : '#0C120E',
+                borderColor:
+                  isPlaying && !isMuted
+                    ? '#00E676'
+                    : isPlaying && isMuted
+                    ? '#223528'
+                    : '#18241B',
+              }}
+            >
+              {isPlaying && !isMuted ? (
+                <>
+                  <Volume2 size={15} color="#00E676" strokeWidth={2.4} />
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#00E676' }} />
+                  <Text className="text-[9px] font-mono font-bold text-momentum-emerald tracking-widest">
+                    LIVE
+                  </Text>
+                </>
+              ) : isPlaying && isMuted ? (
+                <>
+                  <VolumeX size={15} color="#8E9C92" strokeWidth={2.2} />
+                  <Text className="text-[9px] font-mono font-bold text-momentum-textSecondary">
+                    MUTED
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Music size={14} color="#526056" strokeWidth={2.2} />
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
             onPress={() => {
               if (typeof onNotificationPress === 'function') {

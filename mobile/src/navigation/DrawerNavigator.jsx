@@ -1,10 +1,11 @@
-﻿import React from 'react';
+import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import BottomTabNavigator from './BottomTabNavigator';
 import MilestonesScreen from '../screens/secondary/MilestonesScreen';
 import CommunityScreen from '../screens/secondary/CommunityScreen';
 import SettingsScreen from '../screens/secondary/SettingsScreen';
 import NotificationsScreen from '../screens/secondary/NotificationsScreen';
+import FocusPomodoroScreen from '../screens/secondary/FocusPomodoroScreen';
 import ModulePlaceholderScreen from '../screens/secondary/ModulePlaceholderScreen';
 import CustomDrawerContent from './CustomDrawerContent';
 
@@ -30,6 +31,7 @@ export default function DrawerNavigator() {
       <Drawer.Screen name="Milestones" component={MilestonesScreen} />
       <Drawer.Screen name="Community" component={CommunityScreen} />
       <Drawer.Screen name="Settings" component={SettingsScreen} />
+      <Drawer.Screen name="FocusPomodoro" component={FocusPomodoroScreen} />
       <Drawer.Screen name="ModulePlaceholder" component={ModulePlaceholderScreen} />
     </Drawer.Navigator>
   );
