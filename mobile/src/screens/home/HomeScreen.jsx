@@ -13,13 +13,22 @@ import { quoteApi } from '../../api/quoteApi';
 import { cacheManager } from '../../storage/cacheManager';
 import { localStorage } from '../../storage/localStorage';
 import { updateNativeWidget } from '../../services/systemNotificationService';
-import { Plus, CheckSquare } from 'lucide-react-native';
+import { useAudio } from '../../context/AudioContext';
+import { Plus, CheckSquare, Timer, Play } from 'lucide-react-native';
 
 const DAILY_QUOTE_CACHE_KEY = 'momentum_daily_quote_cache';
+const DAILY_QUOTE_TIME_KEY = 'momentum_daily_quote_last_time';
 
 function HomeScreen({ navigation }) {
   const { user } = useAuth();
   const { tasks, isLoading, fetchTasks, addTask, toggleTask, deleteTask } = useTasks();
+  let activeTrack = null;
+  try {
+    const audioContext = useAudio();
+    activeTrack = audioContext?.activeTrack;
+  } catch {
+    activeTrack = null;
+  }
   const [heatmapData, setHeatmapData] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,6 +46,10 @@ function HomeScreen({ navigation }) {
   const loadQuote = async () => {
     try {
       const cached = await localStorage.getItem(DAILY_QUOTE_CACHE_KEY);
+      const lastTimeStr = await localStorage.getItem(DAILY_QUOTE_TIME_KEY);
+      const lastTime = Number(lastTimeStr) || 0;
+      const isExpired = Date.now() - lastTime > 3 * 60 * 60 * 1000; // 3 hours
+
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed?.quote) {
@@ -45,11 +58,23 @@ function HomeScreen({ navigation }) {
         }
       }
 
-      const res = await quoteApi.getDailyQuote();
-      if (res.data?.success && res.data?.data?.quote) {
-        setQuoteData(res.data.data);
-        await localStorage.setItem(DAILY_QUOTE_CACHE_KEY, JSON.stringify(res.data.data));
-        updateNativeWidget(res.data.data.quote, res.data.data.author, streak);
+      // If no cache or more than 3 hours have passed, auto-fetch a fresh quote
+      if (!cached || isExpired) {
+        let res = null;
+        try {
+          res = await quoteApi.generateQuote({ category: quoteData.category || 'DISCIPLINE' });
+        } catch {
+          try {
+            res = await quoteApi.getDailyQuote();
+          } catch {}
+        }
+
+        if (res?.data?.success && res.data?.data?.quote) {
+          setQuoteData(res.data.data);
+          await localStorage.setItem(DAILY_QUOTE_CACHE_KEY, JSON.stringify(res.data.data));
+          await localStorage.setItem(DAILY_QUOTE_TIME_KEY, String(Date.now()));
+          updateNativeWidget(res.data.data.quote, res.data.data.author, streak);
+        }
       }
     } catch {
       // Non-blocking
@@ -63,6 +88,7 @@ function HomeScreen({ navigation }) {
       if (res.data?.success && res.data?.data?.quote) {
         setQuoteData(res.data.data);
         await localStorage.setItem(DAILY_QUOTE_CACHE_KEY, JSON.stringify(res.data.data));
+        await localStorage.setItem(DAILY_QUOTE_TIME_KEY, String(Date.now()));
         updateNativeWidget(res.data.data.quote, res.data.data.author, streak);
       }
     } catch {
@@ -138,6 +164,29 @@ function HomeScreen({ navigation }) {
 
             {/* Heatmap Card (Synchronized with Database + Live Tasks) */}
             <ContributionHeatmap heatmapData={heatmapData} todayTasks={tasks} />
+
+            {/* Quick Flow & Pomodoro Launcher Banner */}
+            <TouchableOpacity
+              onPress={() => navigation?.navigate?.('FocusPomodoro')}
+              activeOpacity={0.8}
+              className="flex-row items-center justify-between p-3 rounded-2xl bg-[#00170A] border border-momentum-emerald/40 mt-1 mb-3.5"
+            >
+              <View className="flex-row items-center gap-2.5">
+                <View className="w-8 h-8 rounded-xl bg-[#002B13] border border-momentum-emerald items-center justify-center">
+                  <Timer size={16} color="#00E676" strokeWidth={2.4} />
+                </View>
+                <View>
+                  <Text className="text-xs font-bold text-white">Pomodoro Focus Timer</Text>
+                  <Text className="text-[10px] font-mono text-momentum-emerald">
+                    {activeTrack?.title || 'Seven Floors Above'} &bull; Enter Flow State
+                  </Text>
+                </View>
+              </View>
+              <View className="px-2.5 py-1 rounded-lg bg-momentum-emerald flex-row items-center gap-1">
+                <Play size={10} color="#000000" strokeWidth={3} style={{ marginLeft: 1 }} />
+                <Text className="text-[10px] font-bold text-black font-mono">FLOW</Text>
+              </View>
+            </TouchableOpacity>
 
             {/* Today's Tasks Section Bar */}
             <View className="flex-row items-center justify-between mt-1 mb-3.5">

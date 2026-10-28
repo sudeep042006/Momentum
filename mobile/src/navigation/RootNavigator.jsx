@@ -7,26 +7,60 @@ import DrawerNavigator from './DrawerNavigator';
 
 export const navigationRef = createNavigationContainerRef();
 
+let pendingNavigation = null;
+
 export function navigateGlobal(name, params) {
   if (navigationRef.isReady()) {
-    navigationRef.navigate(name, params);
+    try {
+      navigationRef.navigate(name, params);
+    } catch (e) {
+      pendingNavigation = { name, params };
+    }
+  } else {
+    pendingNavigation = { name, params };
   }
 }
 
 export default function RootNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <View className="flex-1 bg-momentum-bg items-center justify-center">
-        <ActivityIndicator size="small" color="#00E676" />
-      </View>
-    );
-  }
+  React.useEffect(() => {
+    if (!isLoading && isAuthenticated && pendingNavigation && navigationRef.isReady()) {
+      const target = pendingNavigation;
+      pendingNavigation = null;
+      setTimeout(() => {
+        try {
+          navigationRef.navigate(target.name, target.params);
+        } catch (e) {
+          console.warn('Deferred navigateGlobal error:', e);
+        }
+      }, 100);
+    }
+  }, [isLoading, isAuthenticated]);
 
   return (
-    <NavigationContainer ref={navigationRef}>
-      {isAuthenticated ? <DrawerNavigator /> : <AuthNavigator />}
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={() => {
+        if (!isLoading && isAuthenticated && pendingNavigation) {
+          try {
+            navigationRef.navigate(pendingNavigation.name, pendingNavigation.params);
+          } catch (e) {
+            console.warn('Deferred navigateGlobal error:', e);
+          }
+          pendingNavigation = null;
+        }
+      }}
+    >
+      {isLoading ? (
+        <View className="flex-1 bg-black items-center justify-center" style={{ backgroundColor: '#000000' }}>
+          <ActivityIndicator size="small" color="#00E676" />
+        </View>
+      ) : isAuthenticated ? (
+        <DrawerNavigator />
+      ) : (
+        <AuthNavigator />
+      )}
     </NavigationContainer>
   );
 }

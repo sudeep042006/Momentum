@@ -1,7 +1,7 @@
 import { Linking, Platform } from 'react-native';
 import { localStorage } from '../storage/localStorage';
 
-export const CURRENT_APP_VERSION = 'v1.1';
+export const CURRENT_APP_VERSION = 'v1.12';
 const GITHUB_REPO = 'sudeep042006/Momentum';
 const SNOOZE_STORAGE_KEY = 'momentum_update_snooze_until';
 const INSTALLED_VERSION_KEY = 'momentum_installed_version';

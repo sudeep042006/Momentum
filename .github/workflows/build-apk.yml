@@ -67,6 +67,21 @@ jobs:
         run: |
           yes | sdkmanager --licenses 2>/dev/null || true
 
+      - name: Synchronize App Version
+        id: sync_ver
+        run: |
+          RUN_NUM="${{ github.run_number }}"
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            RAW_TAG="${{ github.ref_name }}"
+            VER_NAME="${RAW_TAG#v}"
+          else
+            VER_NAME="1.${RUN_NUM}"
+          fi
+          echo "Building APK with versionName=${VER_NAME} and versionCode=${RUN_NUM}"
+          echo "ver_name=${VER_NAME}" >> $GITHUB_ENV
+          echo "ver_code=${RUN_NUM}" >> $GITHUB_ENV
+          sed -i -E "s/CURRENT_APP_VERSION = '.*'/CURRENT_APP_VERSION = 'v${VER_NAME}'/" mobile/src/services/updateService.js || true
+
       - name: Build Release APK
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || 'momentum2026pass' }}
@@ -75,7 +90,7 @@ jobs:
         run: |
           cd mobile/android
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
+          ./gradlew assembleRelease -PversionCode=${{ env.ver_code }} -PversionName=${{ env.ver_name }} --no-daemon -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
 
       - name: Prepare APK File
         id: prepare_apk
