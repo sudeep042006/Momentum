@@ -8,7 +8,7 @@ import { localStorage } from '../../../storage/localStorage';
 
 const DAILY_QUOTE_CACHE_KEY = 'momentum_daily_quote_cache';
 
-export default function TodayHeader({ name = 'Sudeep', completedCount = 0, totalCount = 0, streak = 0 }) {
+export default function TodayHeader({ name = 'Momentum User', completedCount = 0, totalCount = 0, streak = 0 }) {
   const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   
   // Format current date: MON, 20 OCT 2026

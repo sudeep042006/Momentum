@@ -7,6 +7,7 @@ import { TaskProvider } from './src/context/TaskContext';
 import { SyncProvider } from './src/context/SyncContext';
 import { NotificationProvider, useNotifications } from './src/context/NotificationContext';
 import { AudioProvider } from './src/context/AudioContext';
+import { TimerProvider } from './src/context/TimerContext';
 import UpdateModal from './src/components/UpdateModal';
 import { checkForAppUpdate } from './src/services/updateService';
 import {
@@ -150,10 +151,12 @@ export default function App() {
           <TaskProvider>
             <NotificationProvider>
               <AudioProvider>
-                <AppContent />
-                {showSplash && (
-                  <LandingSplashScreen onFinish={() => setShowSplash(false)} />
-                )}
+                <TimerProvider>
+                  <AppContent />
+                  {showSplash && (
+                    <LandingSplashScreen onFinish={() => setShowSplash(false)} />
+                  )}
+                </TimerProvider>
               </AudioProvider>
             </NotificationProvider>
           </TaskProvider>

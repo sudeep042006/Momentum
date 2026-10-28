@@ -20,7 +20,7 @@ const uploadToCloudinary = (buffer) => {
 
 const createOrUpdateProfile = async (req, res) => {
     try {
-        const { name, email, tagline } = req.body;
+        const { name, email, tagline, bio, location } = req.body;
         const userId = req.user.id;
         
         let profilePicUrl = undefined;
@@ -39,6 +39,8 @@ const createOrUpdateProfile = async (req, res) => {
             if (name) updateData.name = name;
             if (email) updateData.email = email;
             if (tagline !== undefined) updateData.tagline = tagline;
+            if (bio !== undefined) updateData.bio = bio;
+            if (location !== undefined) updateData.location = location;
             if (profilePicUrl) updateData.profilePic = profilePicUrl;
             
             const updated = await userService.updateProfile(userId, updateData);
@@ -52,7 +54,9 @@ const createOrUpdateProfile = async (req, res) => {
             const newProfile = await userService.createProfile(userId, {
                 name,
                 email,
-                tagline: tagline || "Builder • Learner • Thinker",
+                tagline: tagline || "Consistent • Focused • Relentless",
+                bio: bio || "",
+                location: location || "",
                 profilePic: profilePicUrl || ""
             });
             return res.status(201).json({ message: "Profile created successfully", data: newProfile });
@@ -235,7 +239,9 @@ const getMe = async (req, res) => {
             ...supabaseUser,
             profilePic: profile?.profilePic || supabaseUser.user_metadata?.profilePic || "",
             name: profile?.name || supabaseUser.user_metadata?.name || "",
-            tagline: profile?.tagline || "Builder • Learner • Thinker"
+            tagline: profile?.tagline || "Consistent • Focused • Relentless",
+            bio: profile?.bio || supabaseUser.user_metadata?.bio || "",
+            location: profile?.location || supabaseUser.user_metadata?.location || ""
         };
         
         res.status(200).json({ data: mergedUser });

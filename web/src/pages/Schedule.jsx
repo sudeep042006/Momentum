@@ -16,11 +16,11 @@ const formatTime12h = (time24) => {
 };
 
 const BLOCK_COLORS = {
-  Routine: 'bg-[#0a2e15] border-[#1e4a2c] text-[#22c55e]',
-  Work: 'bg-[#0f1b29] border-[#1e293b] text-[#3b82f6]',
-  Learning: 'bg-[#1e112a] border-[#3b1d4f] text-[#a855f7]',
-  Break: 'bg-[#291b0f] border-[#4a2e15] text-[#f59e0b]',
-  Empty: 'bg-[#161b22] border-[#30363d] text-[#8b949e]'
+  Routine: 'bg-black border-emerald-400/40 text-emerald-400',
+  Work: 'bg-black border-blue-400/40 text-blue-400',
+  Learning: 'bg-black border-purple-400/40 text-purple-400',
+  Break: 'bg-black border-amber-400/40 text-amber-400',
+  Empty: 'bg-black border-[#1a1a1a] text-[#8b949e]'
 };
 
 export default function Schedule() {
@@ -188,18 +188,18 @@ export default function Schedule() {
             {hasData && (
               <button 
                 onClick={handleGenerateTemplate}
-                className="flex items-center gap-2 px-4 py-3 bg-momentum-panel border border-momentum-border rounded-xl text-momentum-text-secondary hover:text-white transition-colors shadow-lg text-sm font-bold w-full sm:w-auto justify-center"
+                className="flex items-center gap-2 px-4 py-3 bg-black border border-[#1a1a1a] rounded-xl text-momentum-text-secondary hover:text-white hover:border-emerald-400/60 transition-all shadow-lg text-sm font-bold w-full sm:w-auto justify-center"
               >
                 <RefreshCw size={16} /> Recreate Template
               </button>
             )}
-            <div className="flex items-center justify-between w-full sm:w-auto gap-4 bg-momentum-panel border border-momentum-border rounded-xl p-3 pr-4 shadow-lg">
+            <div className="flex items-center justify-between w-full sm:w-auto gap-4 bg-black border border-[#1a1a1a] rounded-xl p-3 pr-4 shadow-lg">
               <span className="text-sm font-medium text-white px-2">Use this schedule for</span>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-momentum-text-secondary font-bold tracking-widest uppercase">Daily Tasks</span>
                 <button 
                   onClick={handleToggleDailyTasks}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${schedule.useScheduleForDailyTasks ? 'bg-momentum-green-bright' : 'bg-momentum-border'}`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${schedule.useScheduleForDailyTasks ? 'bg-emerald-400' : 'bg-[#1a1a1a]'}`}
                 >
                   <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${schedule.useScheduleForDailyTasks ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
@@ -212,13 +212,13 @@ export default function Schedule() {
         <div className="flex xl:hidden gap-2 mb-6">
           <button 
             onClick={() => setActiveTab('working')}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'working' ? 'bg-momentum-green-bright/10 text-momentum-green-bright border border-momentum-green-bright/30' : 'bg-momentum-panel text-momentum-text-secondary border border-momentum-border'}`}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'working' ? 'bg-emerald-400/10 text-emerald-400 border border-emerald-400/40' : 'bg-black text-momentum-text-secondary border border-[#1a1a1a]'}`}
           >
             Working Days
           </button>
           <button 
             onClick={() => setActiveTab('holiday')}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'holiday' ? 'bg-momentum-green-bright/10 text-momentum-green-bright border border-momentum-green-bright/30' : 'bg-momentum-panel text-momentum-text-secondary border border-momentum-border'}`}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'holiday' ? 'bg-purple-400/10 text-purple-400 border border-purple-400/40' : 'bg-black text-momentum-text-secondary border border-[#1a1a1a]'}`}
           >
             Holidays
           </button>
@@ -226,15 +226,15 @@ export default function Schedule() {
 
         {isLoading ? (
            <div className="flex justify-center py-20">
-             <div className="w-8 h-8 border-4 border-momentum-green-bright/20 border-t-momentum-green-bright rounded-full animate-spin"></div>
+             <div className="w-8 h-8 border-4 border-emerald-400/20 border-t-emerald-400 rounded-full animate-spin"></div>
            </div>
         ) : !hasData ? (
-          <div className="text-center py-32 bg-momentum-panel rounded-2xl border border-dashed border-momentum-border">
+          <div className="text-center py-32 bg-black rounded-2xl border border-dashed border-[#1a1a1a]">
             <h2 className="text-2xl font-bold text-white mb-4">Your schedule is empty</h2>
             <p className="text-momentum-text-secondary mb-8 max-w-md mx-auto">Create a solid routine to build momentum. We can generate a blank 24-hour template to get you started.</p>
             <button 
               onClick={handleGenerateTemplate}
-              className="bg-momentum-green-bright text-momentum-bg px-6 py-3 rounded-xl font-bold text-sm hover:bg-momentum-green transition-colors inline-flex items-center gap-2"
+              className="bg-emerald-400 text-black px-6 py-3 rounded-xl font-bold text-sm hover:bg-emerald-300 transition-all inline-flex items-center gap-2"
             >
               <Plus size={18} /> Generate 24h Template
             </button>
@@ -244,9 +244,9 @@ export default function Schedule() {
             
             {/* Working Days Column */}
             <div className={`flex-col gap-4 ${activeTab === 'working' ? 'flex' : 'hidden xl:flex'}`}>
-              <div className="bg-momentum-panel border border-momentum-border rounded-2xl p-6 shadow-lg">
+              <div className="bg-black border border-[#1a1a1a] rounded-2xl p-6 shadow-lg">
                 <div className="flex items-center gap-3 mb-6">
-                  <Briefcase className="text-momentum-green-bright" size={24} />
+                  <Briefcase className="text-emerald-400" size={24} />
                   <div>
                     <h2 className="text-lg font-bold text-white">Working Days (Mon - Fri)</h2>
                     <p className="text-xs text-momentum-text-secondary mt-1">Your productive weekdays.</p>
@@ -264,7 +264,7 @@ export default function Schedule() {
                   
                   <button 
                     onClick={() => openModal('workingDays')}
-                    className="w-full mt-4 bg-transparent border border-dashed border-momentum-border text-momentum-text-secondary font-bold text-xs uppercase tracking-widest py-4 rounded-xl hover:bg-momentum-border/30 hover:text-white transition-colors flex items-center justify-center gap-2"
+                    className="w-full mt-4 bg-transparent border border-dashed border-[#1a1a1a] text-momentum-text-secondary font-bold text-xs uppercase tracking-widest py-4 rounded-xl hover:border-emerald-400/40 hover:text-emerald-400 transition-all flex items-center justify-center gap-2"
                   >
                     <Plus size={16} /> Add Block
                   </button>
@@ -274,9 +274,9 @@ export default function Schedule() {
 
             {/* Holidays Column */}
             <div className={`flex-col gap-4 ${activeTab === 'holiday' ? 'flex' : 'hidden xl:flex'}`}>
-              <div className="bg-momentum-panel border border-momentum-border rounded-2xl p-6 shadow-lg">
+              <div className="bg-black border border-[#1a1a1a] rounded-2xl p-6 shadow-lg">
                 <div className="flex items-center gap-3 mb-6">
-                  <Coffee className="text-[#a855f7]" size={24} />
+                  <Coffee className="text-purple-400" size={24} />
                   <div>
                     <h2 className="text-lg font-bold text-white">Holidays (Sat - Sun)</h2>
                     <p className="text-xs text-momentum-text-secondary mt-1">Your relaxed and personal days.</p>
@@ -294,7 +294,7 @@ export default function Schedule() {
                   
                   <button 
                     onClick={() => openModal('holidays')}
-                    className="w-full mt-4 bg-transparent border border-dashed border-momentum-border text-momentum-text-secondary font-bold text-xs uppercase tracking-widest py-4 rounded-xl hover:bg-momentum-border/30 hover:text-white transition-colors flex items-center justify-center gap-2"
+                    className="w-full mt-4 bg-transparent border border-dashed border-[#1a1a1a] text-momentum-text-secondary font-bold text-xs uppercase tracking-widest py-4 rounded-xl hover:border-purple-400/40 hover:text-purple-400 transition-all flex items-center justify-center gap-2"
                   >
                     <Plus size={16} /> Add Block
                   </button>

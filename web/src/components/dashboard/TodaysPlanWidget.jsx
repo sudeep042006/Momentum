@@ -78,17 +78,17 @@ export default function TodaysPlanWidget({ tasks, onTasksUpdated, onOptimisticUp
   });
 
   return (
-    <div className="bg-momentum-panel border border-momentum-border rounded-2xl p-6 shadow-lg h-full flex flex-col">
-      <div className="flex justify-between items-center mb-6 border-b border-momentum-border pb-4">
+    <div className="bg-black border border-[#1a1a1a] rounded-2xl p-6 shadow-lg h-full flex flex-col">
+      <div className="flex justify-between items-center mb-6 border-b border-[#1a1a1a] pb-4">
         <h3 className="text-white font-bold tracking-widest flex items-center gap-3">
           Today's Plan
-          <span className="text-momentum-green-bright text-xs font-normal">{tasks.length} tasks</span>
+          <span className="text-emerald-400 text-xs font-normal">{tasks.length} tasks</span>
         </h3>
         
         <div className="flex gap-2">
           <button 
             onClick={() => setIsAdding(!isAdding)}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-white bg-momentum-bg border border-momentum-border rounded-lg hover:border-momentum-text-secondary transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-white bg-black border border-[#1a1a1a] rounded-lg hover:border-emerald-400/60 hover:text-emerald-400 transition-all"
           >
             <Plus size={14} /> Add Task
           </button>
@@ -100,19 +100,19 @@ export default function TodaysPlanWidget({ tasks, onTasksUpdated, onOptimisticUp
 
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
         {isNewDay && tasks.length === 0 && !isAdding ? (
-          <div className="flex flex-col items-center justify-center h-48 text-center bg-momentum-bg/50 rounded-xl border border-dashed border-momentum-border p-6">
+          <div className="flex flex-col items-center justify-center h-48 text-center bg-black rounded-xl border border-dashed border-[#1a1a1a] p-6">
             <h4 className="text-white font-medium mb-2">It's a new day!</h4>
             <p className="text-sm text-momentum-text-secondary mb-4">You have a fresh slate. Would you like to carry over yesterday's tasks?</p>
             <button 
               onClick={handleClone}
               disabled={isCloning}
-              className="bg-momentum-green-bright text-momentum-bg px-4 py-2 rounded-lg font-bold text-sm hover:bg-momentum-green transition-colors disabled:opacity-50"
+              className="bg-emerald-400 text-black px-4 py-2 rounded-lg font-bold text-sm hover:bg-emerald-300 transition-all disabled:opacity-50"
             >
               {isCloning ? 'Cloning...' : 'Repeat Yesterday\'s Tasks'}
             </button>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-2">
             <AnimatePresence>
               {isAdding && (
                 <motion.form
@@ -128,7 +128,7 @@ export default function TodaysPlanWidget({ tasks, onTasksUpdated, onOptimisticUp
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
                     placeholder="Type task and press Enter..."
-                    className="w-full bg-momentum-bg border border-momentum-green-bright/50 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-momentum-green-bright"
+                    className="w-full bg-black border border-emerald-400/70 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/40"
                   />
                 </motion.form>
               )}
@@ -139,10 +139,10 @@ export default function TodaysPlanWidget({ tasks, onTasksUpdated, onOptimisticUp
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   key={task._id}
-                  className={`flex items-center justify-between p-3 rounded-xl group transition-colors hover:bg-momentum-bg ${task.status === 'completed' ? 'opacity-50' : ''}`}
+                  className={`flex items-center justify-between p-3.5 rounded-lg group transition-all border ${task.status === 'completed' ? 'bg-black border-[#1a1a1a]/60 opacity-60' : 'bg-black border-[#1a1a1a] hover:border-emerald-400/40 hover:shadow-[0_0_0_1px_rgba(52,211,153,0.15)]'}`}
                 >
                   <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => handleToggle(task)}>
-                    <button className={`${task.status === 'completed' ? 'text-momentum-green-bright' : 'text-momentum-text-secondary group-hover:text-white'} transition-colors`}>
+                    <button className={`${task.status === 'completed' ? 'text-emerald-400' : 'text-momentum-text-secondary group-hover:text-emerald-400'} transition-colors`}>
                       {task.status === 'completed' ? <CheckSquare size={20} /> : <Square size={20} />}
                     </button>
                     <span className={`text-sm ${task.status === 'completed' ? 'text-momentum-text-secondary line-through' : 'text-white'}`}>
@@ -156,7 +156,7 @@ export default function TodaysPlanWidget({ tasks, onTasksUpdated, onOptimisticUp
                         {formatTime12h(task.startTime)}
                       </span>
                     )}
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border border-momentum-border bg-momentum-bg text-momentum-text-secondary">
+                    <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase border border-[#1a1a1a] bg-black text-momentum-text-secondary">
                       {task.category || 'Work'}
                     </span>
                   </div>

@@ -116,7 +116,7 @@ export default function Calendar() {
     
     // Padding for previous month
     for (let i = 0; i < firstDayOfMonth; i++) {
-      cells.push(<div key={`empty-${i}`} className="bg-momentum-bg/50 border border-momentum-border/30 min-h-[120px] rounded-lg"></div>);
+      cells.push(<div key={`empty-${i}`} className="bg-[#050505] border border-[#151515] min-h-[120px] rounded-lg"></div>);
     }
 
     // Days in current month
@@ -131,8 +131,8 @@ export default function Calendar() {
         <div 
           key={day} 
           onClick={() => openModalForDate(day)}
-          className={`bg-momentum-panel border min-h-[120px] rounded-lg p-2 flex flex-col transition-all cursor-pointer group
-            ${isToday ? 'border-momentum-green-bright shadow-[0_0_15px_rgba(20,241,149,0.15)]' : 'border-momentum-border hover:border-momentum-green-bright/50'}
+          className={`bg-[#0a0a0a] border min-h-[120px] rounded-lg p-2 flex flex-col transition-all cursor-pointer group
+            ${isToday ? 'border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.12)]' : 'border-[#1a1a1a] hover:border-emerald-400/40'}
           `}
         >
           <div className="flex justify-between items-center mb-2">

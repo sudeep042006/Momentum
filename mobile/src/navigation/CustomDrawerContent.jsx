@@ -39,15 +39,16 @@ export default function CustomDrawerContent({ navigation, state }) {
     unreadCount = 0;
   }
 
-  const name = user?.name || user?.user_metadata?.name || 'Sudeep Kuralkar';
-  const handle = user?.username || user?.user_metadata?.username || '@sudeepkuralkar';
+  const name = user?.name || user?.user_metadata?.name || 'Momentum User';
+  const tagline = user?.tagline || user?.slogan || 'Consistent • Focused';
   const profilePic = user?.profilePic || user?.user_metadata?.profilePic;
   const initials = name
     .split(' ')
+    .filter(Boolean)
     .map((n) => n[0])
     .join('')
     .substring(0, 2)
-    .toUpperCase();
+    .toUpperCase() || 'MU';
 
   const navigateToTab = (tabName) => {
     navigation.navigate('MainTabs', { screen: tabName });
@@ -155,9 +156,9 @@ export default function CustomDrawerContent({ navigation, state }) {
               <Text
                 numberOfLines={1}
                 allowFontScaling={false}
-                className="text-[10px] font-mono text-momentum-textSecondary"
+                className="text-[10px] font-mono text-momentum-emerald"
               >
-                {handle}
+                {user?.email || tagline}
               </Text>
               <View className="flex-row items-center gap-1 mt-0.5">
                 <View className="w-1.5 h-1.5 rounded-full bg-momentum-emerald" />
@@ -166,7 +167,7 @@ export default function CustomDrawerContent({ navigation, state }) {
                   allowFontScaling={false}
                   className="text-[9.5px] text-momentum-textSecondary"
                 >
-                  Developer
+                  {tagline || 'Active Member'}
                 </Text>
               </View>
             </View>

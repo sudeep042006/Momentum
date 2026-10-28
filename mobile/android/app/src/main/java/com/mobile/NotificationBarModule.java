@@ -37,6 +37,8 @@ public class NotificationBarModule extends ReactContextBaseJavaModule {
     private static final String CHANNEL_NAME = "Momentum Alerts";
     public static final String CHANNEL_ID_TASKS = "momentum_channel_tasks";
     public static final int NOTIFICATION_ID_TASKS = 8801;
+    public static final String CHANNEL_ID_TIMER = "momentum_channel_timer";
+    public static final int NOTIFICATION_ID_TIMER = 8802;
 
     private static NotificationBarModule instance;
     private final ReactApplicationContext reactContext;
@@ -100,10 +102,21 @@ public class NotificationBarModule extends ReactContextBaseJavaModule {
             tasksChannel.setDescription("Today's task checklist in your notification bar");
             tasksChannel.setShowBadge(true);
 
+            NotificationChannel timerChannel = new NotificationChannel(
+                CHANNEL_ID_TIMER,
+                "Focus Timer",
+                NotificationManager.IMPORTANCE_LOW
+            );
+            timerChannel.setDescription("Live Focus and Pomodoro countdown");
+            timerChannel.setShowBadge(true);
+            timerChannel.enableVibration(false);
+            timerChannel.enableLights(false);
+
             NotificationManager notificationManager = (NotificationManager) reactContext.getSystemService(Context.NOTIFICATION_SERVICE);
             if (notificationManager != null) {
                 notificationManager.createNotificationChannel(channel);
                 notificationManager.createNotificationChannel(tasksChannel);
+                notificationManager.createNotificationChannel(timerChannel);
             }
         }
     }
@@ -750,6 +763,74 @@ public class NotificationBarModule extends ReactContextBaseJavaModule {
             NotificationManager notificationManager = (NotificationManager) reactContext.getSystemService(Context.NOTIFICATION_SERVICE);
             if (notificationManager != null) {
                 notificationManager.cancel(NOTIFICATION_ID_TASKS);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    @ReactMethod
+    public void showTimerNotification(String title, String summary, double targetEndTimeMillis, boolean isRunning, int currentSession, int totalSessions) {
+        try {
+            Intent intent = new Intent(reactContext, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            intent.putExtra("extra_action_type", "POMODORO");
+            intent.putExtra("extra_payload", "{}");
+
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                flags |= PendingIntent.FLAG_IMMUTABLE;
+            }
+
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                reactContext,
+                NOTIFICATION_ID_TIMER,
+                intent,
+                flags
+            );
+
+            int iconResId = reactContext.getResources().getIdentifier("ic_launcher", "mipmap", reactContext.getPackageName());
+            if (iconResId == 0) {
+                iconResId = android.R.drawable.ic_dialog_info;
+            }
+
+            long targetTime = (long) targetEndTimeMillis;
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(reactContext, CHANNEL_ID_TIMER)
+                .setSmallIcon(iconResId)
+                .setColor(0xFF00E676)
+                .setColorized(true)
+                .setContentTitle(title != null ? title : "⏱️ Focus Timer")
+                .setContentText(summary != null ? summary : "Session in progress")
+                .setSubText("Session " + currentSession + "/" + totalSessions)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setContentIntent(pendingIntent)
+                .setOnlyAlertOnce(true)
+                .setOngoing(isRunning)
+                .setAutoCancel(false)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+
+            if (isRunning && targetTime > System.currentTimeMillis()) {
+                builder.setWhen(targetTime)
+                       .setUsesChronometer(true)
+                       .setChronometerCountDown(true);
+            } else {
+                builder.setUsesChronometer(false);
+            }
+
+            NotificationManager notificationManager = (NotificationManager) reactContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (notificationManager != null) {
+                notificationManager.notify(NOTIFICATION_ID_TIMER, builder.build());
+            }
+        } catch (Exception e) {
+            Log.w("NotificationBarModule", "showTimerNotification error: " + e.getMessage());
+        }
+    }
+
+    @ReactMethod
+    public void cancelTimerNotification() {
+        try {
+            NotificationManager notificationManager = (NotificationManager) reactContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (notificationManager != null) {
+                notificationManager.cancel(NOTIFICATION_ID_TIMER);
             }
         } catch (Exception ignored) {}
     }

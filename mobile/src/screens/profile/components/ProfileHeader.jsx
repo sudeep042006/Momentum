@@ -1,27 +1,28 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Edit3, MapPin, Calendar, Camera } from 'lucide-react-native';
 import { colors } from '../../../theme/colors';
 
 export default function ProfileHeader({ user, onEdit }) {
-  const name = user?.name || user?.user_metadata?.name || 'Sudeep Kuralkar';
-  const handle = user?.username || user?.user_metadata?.username || '@sudeepkuralkar';
-  const location = user?.location || 'Nagpur, India';
-  const joinedDate = user?.joinedDate || 'Joined Jul 2026';
-  const bio =
-    user?.bio ||
-    'Trying to become a better version of myself everyday.\nDSA | Web Dev | ML | Building useful products.';
+  const name = user?.name || user?.user_metadata?.name || 'Momentum User';
+  const tagline = user?.tagline || user?.slogan || 'Consistent • Focused • Relentless';
+  const location = user?.location || 'Remote';
+  const joinedDate = user?.createdAt
+    ? `Joined ${new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`
+    : (user?.joinedDate || 'Joined 2026');
+  const bio = user?.bio || 'Building consistency and focus every single day.';
   const profilePic = user?.profilePic || user?.user_metadata?.profilePic;
   const initials = name
     .split(' ')
+    .filter(Boolean)
     .map((n) => n[0])
     .join('')
     .substring(0, 2)
-    .toUpperCase();
+    .toUpperCase() || 'MU';
 
   return (
     <View className="p-4 mb-4 rounded-2xl bg-momentum-card border border-momentum-border">
-      {/* Top row with avatar, name, handle, and Edit button */}
+      {/* Top row with avatar, name, tagline, and Edit button */}
       <View className="flex-row items-start justify-between mb-3">
         <View className="flex-row items-center gap-3.5 flex-1 mr-2">
           {/* Avatar with Camera Badge */}
@@ -40,16 +41,13 @@ export default function ProfileHeader({ user, onEdit }) {
             </View>
           </View>
 
-          {/* Name & Handle */}
+          {/* Name & Universal/Custom Tagline */}
           <View className="flex-1">
             <Text className="text-base font-bold text-white tracking-tight" numberOfLines={1}>
               {name}
             </Text>
-            <Text className="text-xs font-mono text-momentum-textSecondary">
-              {handle}
-            </Text>
-            <Text className="text-[11px] text-momentum-textSecondary mt-0.5">
-              Builder • Developer • Curious
+            <Text className="text-xs font-mono text-momentum-emerald mt-0.5" numberOfLines={1}>
+              {tagline}
             </Text>
           </View>
         </View>
@@ -90,3 +88,4 @@ export default function ProfileHeader({ user, onEdit }) {
     </View>
   );
 }
+

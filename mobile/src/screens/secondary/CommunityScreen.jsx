@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -196,7 +196,7 @@ export default function CommunityScreen({ navigation }) {
                     @{item.username || item.name?.toLowerCase().replace(/\s+/g, '')}
                   </Text>
                   <Text className="text-[11px] text-momentum-textSecondary mt-0.5" numberOfLines={1}>
-                    {item.tagline || 'Builder • Learner • Thinker'}
+                    {item.tagline || 'Consistent • Focused • Relentless'}
                   </Text>
                 </View>
               </View>
@@ -287,7 +287,7 @@ export default function CommunityScreen({ navigation }) {
                   @{displayUser?.username || displayUser?.name?.toLowerCase().replace(/\s+/g, '')}
                 </Text>
                 <Text className="text-xs text-momentum-textSecondary text-center mt-2 px-2">
-                  "{displayUser?.tagline || 'Builder • Learner • Thinker'}"
+                  "{displayUser?.tagline || 'Consistent • Focused • Relentless'}"
                 </Text>
 
                 {/* Follow Button */}

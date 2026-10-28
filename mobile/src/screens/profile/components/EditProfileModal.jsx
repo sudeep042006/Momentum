@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,19 +13,16 @@ import { colors } from '../../../theme/colors';
 
 export default function EditProfileModal({ visible, user, onClose, onSave }) {
   const [name, setName] = useState('');
-  const [handle, setHandle] = useState('');
+  const [tagline, setTagline] = useState('');
   const [location, setLocation] = useState('');
   const [bio, setBio] = useState('');
 
   useEffect(() => {
     if (user) {
-      setName(user.name || user.user_metadata?.name || 'Sudeep Kuralkar');
-      setHandle(user.username || user.user_metadata?.username || '@sudeepkuralkar');
-      setLocation(user.location || 'Nagpur, India');
-      setBio(
-        user.bio ||
-          'Trying to become a better version of myself everyday.\nDSA | Web Dev | ML | Building useful products.'
-      );
+      setName(user.name || user.user_metadata?.name || '');
+      setTagline(user.tagline || user.slogan || '');
+      setLocation(user.location || '');
+      setBio(user.bio || '');
     }
   }, [user, visible]);
 
@@ -33,7 +30,7 @@ export default function EditProfileModal({ visible, user, onClose, onSave }) {
     if (!name.trim()) return;
     onSave({
       name: name.trim(),
-      username: handle.trim(),
+      tagline: tagline.trim(),
       location: location.trim(),
       bio: bio.trim(),
     });
@@ -82,19 +79,19 @@ export default function EditProfileModal({ visible, user, onClose, onSave }) {
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="Sudeep Kuralkar"
+              placeholder="Your full name"
               placeholderTextColor={colors.text.muted}
               className="bg-momentum-input border border-momentum-border rounded-xl px-4 py-3 text-sm text-white mb-3"
             />
 
-            {/* Handle */}
+            {/* Universal / Custom Slogan Tagline */}
             <Text className="text-[10px] font-mono uppercase tracking-wider font-semibold text-momentum-textSecondary mb-1.5">
-              Username
+              Slogan / Tagline
             </Text>
             <TextInput
-              value={handle}
-              onChangeText={setHandle}
-              placeholder="@sudeepkuralkar"
+              value={tagline}
+              onChangeText={setTagline}
+              placeholder="e.g. Consistent • Focused • Relentless"
               placeholderTextColor={colors.text.muted}
               className="bg-momentum-input border border-momentum-border rounded-xl px-4 py-3 text-sm text-white mb-3"
             />
@@ -106,7 +103,7 @@ export default function EditProfileModal({ visible, user, onClose, onSave }) {
             <TextInput
               value={location}
               onChangeText={setLocation}
-              placeholder="Nagpur, India"
+              placeholder="e.g. San Francisco, CA or Remote"
               placeholderTextColor={colors.text.muted}
               className="bg-momentum-input border border-momentum-border rounded-xl px-4 py-3 text-sm text-white mb-3"
             />
@@ -118,7 +115,7 @@ export default function EditProfileModal({ visible, user, onClose, onSave }) {
             <TextInput
               value={bio}
               onChangeText={setBio}
-              placeholder="Tell others about what you build..."
+              placeholder="Describe your daily goals and philosophy..."
               placeholderTextColor={colors.text.muted}
               multiline
               numberOfLines={3}

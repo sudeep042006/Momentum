@@ -19,58 +19,25 @@ import Svg, {
 
 const { width, height } = Dimensions.get('window');
 
-export default function LandingSplashScreen({ onFinish, minDuration = 1800 }) {
-  // Animation values
-  const logoScale = useRef(new Animated.Value(0.75)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
+export default function LandingSplashScreen({ onFinish, minDuration = 2200 }) {
+  // Animation values - logo, text, and footer are fully visible INSTANTLY from frame 0
+  const logoScale = useRef(new Animated.Value(0.88)).current;
   const glowPulse = useRef(new Animated.Value(0.4)).current;
   const dotPulse = useRef(new Animated.Value(0.2)).current;
 
-  const textOpacity = useRef(new Animated.Value(0)).current;
-  const textTranslateY = useRef(new Animated.Value(14)).current;
-
-  const footerOpacity = useRef(new Animated.Value(0)).current;
   const screenOpacity = useRef(new Animated.Value(1)).current;
   const screenScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // 1. Entrance: Logo spring pop + fade in
-    Animated.parallel([
-      Animated.timing(logoOpacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.spring(logoScale, {
-        toValue: 1,
-        tension: 45,
-        friction: 6.5,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // 1. Subtle spring pop on the logo emblem on open
+    Animated.spring(logoScale, {
+      toValue: 1,
+      tension: 50,
+      friction: 7,
+      useNativeDriver: true,
+    }).start();
 
-    // 2. Delayed text entrance
-    const textTimer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(textOpacity, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(textTranslateY, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(footerOpacity, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, 250);
-
-    // 3. Ambient Breathing Glow Loop
+    // 2. Ambient Breathing Glow Loop
     const glowAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(glowPulse, {
@@ -87,7 +54,7 @@ export default function LandingSplashScreen({ onFinish, minDuration = 1800 }) {
     );
     glowAnimation.start();
 
-    // 4. Dot Heartbeat Ping Loop
+    // 3. Dot Heartbeat Ping Loop
     const dotAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(dotPulse, {
@@ -104,17 +71,17 @@ export default function LandingSplashScreen({ onFinish, minDuration = 1800 }) {
     );
     dotAnimation.start();
 
-    // 5. Instagram-Style Exit: Cinematic zoom + fade out into app
+    // 4. Hold full splash screen (Logo + MOMMENTTUM + from .SO__DEEP.) for minDuration (2.2s), then smooth Instagram-style exit
     const exitTimer = setTimeout(() => {
       Animated.parallel([
         Animated.timing(screenOpacity, {
           toValue: 0,
-          duration: 450,
+          duration: 350,
           useNativeDriver: true,
         }),
         Animated.timing(screenScale, {
-          toValue: 1.06,
-          duration: 450,
+          toValue: 1.05,
+          duration: 350,
           useNativeDriver: true,
         }),
       ]).start(() => {
@@ -127,7 +94,6 @@ export default function LandingSplashScreen({ onFinish, minDuration = 1800 }) {
     }, minDuration);
 
     return () => {
-      clearTimeout(textTimer);
       clearTimeout(exitTimer);
       glowAnimation.stop();
       dotAnimation.stop();
@@ -184,7 +150,6 @@ export default function LandingSplashScreen({ onFinish, minDuration = 1800 }) {
           style={[
             styles.logoWrapper,
             {
-              opacity: logoOpacity,
               transform: [{ scale: logoScale }],
             },
           ]}
@@ -220,18 +185,10 @@ export default function LandingSplashScreen({ onFinish, minDuration = 1800 }) {
           </View>
         </Animated.View>
 
-        {/* Brand Wordmark & Tagline */}
-        <Animated.View
-          style={[
-            styles.titleContainer,
-            {
-              opacity: textOpacity,
-              transform: [{ translateY: textTranslateY }],
-            },
-          ]}
-        >
+        {/* Brand Wordmark & Tagline - Instant Display */}
+        <View style={styles.titleContainer}>
           <View style={styles.brandRow}>
-            <Text style={styles.brandTitle}>MOMENTUM</Text>
+            <Text style={styles.brandTitle}>MOMMENTTUM</Text>
             <View style={styles.emeraldPill}>
               <Text style={styles.emeraldPillText}>PRO</Text>
             </View>
@@ -242,17 +199,17 @@ export default function LandingSplashScreen({ onFinish, minDuration = 1800 }) {
             <Text style={styles.taglineText}>DISCIPLINE EQUALS FREEDOM</Text>
             <View style={styles.taglineDot} />
           </View>
-        </Animated.View>
+        </View>
       </View>
 
-      {/* Bottom Footer (Instagram-style "from Meta") */}
-      <Animated.View style={[styles.footerContainer, { opacity: footerOpacity }]}>
+      {/* Bottom Footer (Instagram-style "from Meta") - Instant Display */}
+      <View style={styles.footerContainer}>
         <Text style={styles.footerFrom}>from</Text>
         <View style={styles.footerBrandRow}>
           <View style={styles.footerDot} />
-          <Text style={styles.footerBrand}>YOU</Text>
+          <Text style={styles.footerBrand}>.SO__DEEP.</Text>
         </View>
-      </Animated.View>
+      </View>
     </Animated.View>
   );
 }
@@ -361,40 +318,46 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   taglineText: {
-    color: '#63756A',
-    fontSize: 10.5,
+    color: '#7D9183',
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 3,
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   footerContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 44 : 36,
+    bottom: Platform.OS === 'ios' ? 70 : 60,
     alignItems: 'center',
     justifyContent: 'center',
   },
   footerFrom: {
-    color: '#3F4F45',
-    fontSize: 11,
-    fontWeight: '500',
-    letterSpacing: 1.2,
-    marginBottom: 4,
+    color: '#7C8E82',
+    fontSize: 11.5,
+    fontWeight: '600',
+    letterSpacing: 2,
+    marginBottom: 5,
+    textTransform: 'lowercase',
   },
   footerBrandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
   },
   footerDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: '#00E676',
+    shadowColor: '#00E676',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 4,
   },
   footerBrand: {
-    color: '#8E9C92',
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 4.5,
+    color: '#DCE5E0',
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: 5,
   },
 });
