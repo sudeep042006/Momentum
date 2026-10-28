@@ -23,11 +23,15 @@ import {
   Brain,
   FolderOpen,
   Layers,
+  Moon,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react-native';
 import AppHeader from '../../components/AppHeader';
 import MusicManagerModal from '../../components/MusicManagerModal';
 import { useAudio } from '../../context/AudioContext';
 import { useTimer } from '../../context/TimerContext';
+import { setKeepScreenOn, setImmersiveMode } from '../../services/systemNotificationService';
 
 function LiveEqualizer({ isPlaying }) {
   const bar1 = useRef(new Animated.Value(0.3)).current;
@@ -68,6 +72,7 @@ function LiveEqualizer({ isPlaying }) {
       a3.stop();
       a4.stop();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying]);
 
   return (
@@ -148,6 +153,78 @@ export default function FocusPomodoroScreen({ navigation }) {
   } = useTimer();
 
   const [showMusicModal, setShowMusicModal] = useState(false);
+  const [isAmoledStandby, setIsAmoledStandby] = useState(false);
+  const [autoStandbyEnabled, setAutoStandbyEnabled] = useState(true);
+  const inactivityTimerRef = useRef(null);
+  const burnInOffset = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+
+  // Reset 10-second inactivity timer on any user touch/interaction
+  const resetInactivityTimer = () => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+    }
+    if (isRunning && autoStandbyEnabled && !isAmoledStandby) {
+      inactivityTimerRef.current = setTimeout(() => {
+        setIsAmoledStandby(true);
+      }, 10000); // 10s inactivity countdown
+    }
+  };
+
+  // Monitor timer state & auto-standby toggle
+  useEffect(() => {
+    if (isRunning && autoStandbyEnabled && !isAmoledStandby) {
+      resetInactivityTimer();
+    } else {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+        inactivityTimerRef.current = null;
+      }
+    }
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRunning, autoStandbyEnabled, isAmoledStandby]);
+
+  // Keep screen awake (no sleep) and toggle immersive fullscreen
+  useEffect(() => {
+    if (isAmoledStandby || isRunning) {
+      setKeepScreenOn(true);
+    } else {
+      setKeepScreenOn(false);
+    }
+
+    if (isAmoledStandby) {
+      setImmersiveMode(true);
+    } else {
+      setImmersiveMode(false);
+    }
+
+    return () => {
+      setKeepScreenOn(false);
+      setImmersiveMode(false);
+    };
+  }, [isAmoledStandby, isRunning]);
+
+  // Pixel-shifting anti-burn-in animation for AMOLED screens (shifts coordinates by ±3px every 60s)
+  useEffect(() => {
+    if (!isAmoledStandby) return;
+
+    const interval = setInterval(() => {
+      const offsetX = (Math.random() - 0.5) * 6;
+      const offsetY = (Math.random() - 0.5) * 6;
+      Animated.timing(burnInOffset, {
+        toValue: { x: offsetX, y: offsetY },
+        duration: 1000,
+        useNativeDriver: true,
+      }).start();
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [isAmoledStandby, burnInOffset]);
 
   const handleSelectMode = (mode) => {
     if (mode.type === 'focus') {
@@ -183,7 +260,7 @@ export default function FocusPomodoroScreen({ navigation }) {
   const ringColor = isBreak ? '#38BDF8' : '#00E676';
 
   return (
-    <View className="flex-1 bg-black">
+    <View className="flex-1 bg-black" onTouchStart={resetInactivityTimer}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
       <AppHeader navigation={navigation} title="Focus & Pomodoro" />
 
@@ -218,6 +295,61 @@ export default function FocusPomodoroScreen({ navigation }) {
               </TouchableOpacity>
             );
           })}
+        </View>
+
+        {/* AMOLED Desk Mode Quick Bar */}
+        <View className="flex-row items-center justify-between px-3 py-2.5 rounded-2xl bg-[#061009] border border-[#14281A] mb-3">
+          <TouchableOpacity
+            onPress={() => setIsAmoledStandby(true)}
+            activeOpacity={0.8}
+            className="flex-row items-center gap-2 flex-1"
+          >
+            <View className="w-7 h-7 rounded-lg bg-[#002B14] items-center justify-center border border-momentum-emerald/40">
+              <Moon size={14} color="#00E676" />
+            </View>
+            <View>
+              <View className="flex-row items-center gap-1.5">
+                <Text className="text-[11.5px] font-bold text-white">
+                  AMOLED Standby
+                </Text>
+                <View className="px-1.5 py-0.5 rounded bg-[#002410] border border-momentum-emerald/40">
+                  <Text className="text-[9px] font-mono font-bold text-momentum-emerald">
+                    NO-SLEEP
+                  </Text>
+                </View>
+              </View>
+              <Text className="text-[9.5px] text-[#6E8175] font-mono mt-0.5">
+                Pure #000000 &bull; 0% Backlight &bull; Saves Battery
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <View className="flex-row items-center gap-2">
+            <TouchableOpacity
+              onPress={() => setAutoStandbyEnabled(!autoStandbyEnabled)}
+              activeOpacity={0.7}
+              className={`px-2 py-1.5 rounded-xl border ${
+                autoStandbyEnabled
+                  ? 'bg-[#00381B] border-momentum-emerald'
+                  : 'bg-[#121A15] border-[#223528]'
+              }`}
+            >
+              <Text
+                className={`text-[9.5px] font-mono font-bold ${
+                  autoStandbyEnabled ? 'text-momentum-emerald' : 'text-[#6E8175]'
+                }`}
+              >
+                {autoStandbyEnabled ? 'AUTO 10S: ON' : 'AUTO: OFF'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setIsAmoledStandby(true)}
+              className="p-2 rounded-xl bg-[#002B14] border border-momentum-emerald/40"
+            >
+              <Maximize2 size={13} color="#00E676" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Multi-Session Selector Pill Bar */}
@@ -545,6 +677,247 @@ export default function FocusPomodoroScreen({ navigation }) {
         visible={showMusicModal}
         onClose={() => setShowMusicModal(false)}
       />
+
+      {/* Fullscreen AMOLED Standby Overlay (Pure #000000, No-Sleep, Burn-in protection) */}
+      {isAmoledStandby && (
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => {
+            setIsAmoledStandby(false);
+            resetInactivityTimer();
+          }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: '#000000',
+            zIndex: 999999,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: 24,
+          }}
+        >
+          <StatusBar hidden={true} />
+
+          {/* Micro-shifting container to prevent OLED burn-in */}
+          <Animated.View
+            style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              transform: [
+                { translateX: burnInOffset.x },
+                { translateY: burnInOffset.y },
+              ],
+            }}
+          >
+            {/* Status Chip */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 7,
+                marginBottom: 20,
+                paddingHorizontal: 12,
+                paddingVertical: 5,
+                borderRadius: 20,
+                backgroundColor: '#001A0B',
+                borderWidth: 1,
+                borderColor: ringColor + '40',
+              }}
+            >
+              <View
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: 3.5,
+                  backgroundColor: isRunning ? ringColor : '#8E9C92',
+                }}
+              />
+              <Text
+                style={{
+                  fontSize: 10,
+                  fontFamily: 'monospace',
+                  fontWeight: '800',
+                  color: ringColor,
+                  letterSpacing: 2,
+                }}
+              >
+                AMOLED NO-SLEEP • {isRunning ? 'ACTIVE' : 'PAUSED'}
+              </Text>
+            </View>
+
+            {/* Session Indicator */}
+            <Text
+              style={{
+                color: ringColor,
+                fontSize: 12,
+                fontFamily: 'monospace',
+                fontWeight: '700',
+                letterSpacing: 2.5,
+                marginBottom: 10,
+              }}
+            >
+              {!isBreak
+                ? `SESSION ${currentSession} OF ${totalSessions} FLOW`
+                : `SESSION ${currentSession} OF ${totalSessions} REST BREAK`}
+            </Text>
+
+            {/* Large Digital Clock (Pure OLED Contrast) */}
+            <Text
+              allowFontScaling={false}
+              style={{
+                fontSize: 70,
+                fontWeight: '900',
+                fontFamily: 'monospace',
+                color: ringColor,
+                letterSpacing: -2,
+                textShadowColor: ringColor + '30',
+                textShadowOffset: { width: 0, height: 0 },
+                textShadowRadius: 18,
+              }}
+            >
+              {timeFormatted}
+            </Text>
+
+            {/* Minimal Session Progress Pills */}
+            <View style={{ flexDirection: 'row', gap: 7, marginTop: 22, width: 150 }}>
+              {Array.from({ length: totalSessions }).map((_, idx) => (
+                <View
+                  key={idx}
+                  style={{
+                    flex: 1,
+                    height: 3.5,
+                    borderRadius: 2,
+                    backgroundColor: idx + 1 <= currentSession ? ringColor : '#121E15',
+                    opacity: idx + 1 === currentSession ? 1 : 0.6,
+                  }}
+                />
+              ))}
+            </View>
+
+            {/* Ambient Track Info if playing */}
+            {isAudioPlaying && !isMuted && (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginTop: 26,
+                  opacity: 0.85,
+                }}
+              >
+                <LiveEqualizer isPlaying={true} />
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    color: '#7D9183',
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    maxWidth: 220,
+                  }}
+                >
+                  {activeTrack?.title || 'Ambient Focus Audio'}
+                </Text>
+              </View>
+            )}
+
+            {/* In-Standby Floating Action Buttons */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 16,
+                marginTop: 40,
+              }}
+            >
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleToggleTimer();
+                }}
+                activeOpacity={0.8}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  paddingHorizontal: 22,
+                  paddingVertical: 10,
+                  borderRadius: 24,
+                  backgroundColor: '#002B14',
+                  borderWidth: 1.5,
+                  borderColor: ringColor,
+                }}
+              >
+                {isRunning ? (
+                  <Pause size={14} color={ringColor} strokeWidth={2.8} />
+                ) : (
+                  <Play size={14} color={ringColor} strokeWidth={2.8} />
+                )}
+                <Text
+                  style={{
+                    color: ringColor,
+                    fontSize: 11,
+                    fontWeight: 'bold',
+                    fontFamily: 'monospace',
+                    letterSpacing: 1.2,
+                  }}
+                >
+                  {isRunning ? 'PAUSE' : 'RESUME'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setIsAmoledStandby(false);
+                  resetInactivityTimer();
+                }}
+                activeOpacity={0.8}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  paddingHorizontal: 18,
+                  paddingVertical: 10,
+                  borderRadius: 24,
+                  backgroundColor: '#0A120D',
+                  borderWidth: 1,
+                  borderColor: '#1D2E21',
+                }}
+              >
+                <Minimize2 size={13} color="#8E9C92" />
+                <Text
+                  style={{
+                    color: '#8E9C92',
+                    fontSize: 11,
+                    fontWeight: 'bold',
+                    fontFamily: 'monospace',
+                    letterSpacing: 1.2,
+                  }}
+                >
+                  EXIT
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Tap anywhere hint */}
+            <Text
+              style={{
+                color: '#34463A',
+                fontSize: 9.5,
+                fontFamily: 'monospace',
+                marginTop: 36,
+                letterSpacing: 1.5,
+              }}
+            >
+              TAP ANYWHERE TO WAKE FULL CONTROLS
+            </Text>
+          </Animated.View>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

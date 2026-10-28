@@ -354,4 +354,34 @@ export function cancelTimerNotification() {
   }
 }
 
+/**
+ * Keeps the screen awake (no sleep) for AMOLED Desk Standby mode
+ * @param {boolean} keepOn
+ */
+export function setKeepScreenOn(keepOn) {
+  if (Platform.OS !== 'android' || !NotificationBarModule) return;
+  try {
+    if (typeof NotificationBarModule.setKeepScreenOn === 'function') {
+      NotificationBarModule.setKeepScreenOn(Boolean(keepOn));
+    }
+  } catch (err) {
+    // Non-blocking
+  }
+}
+
+/**
+ * Toggles edge-to-edge immersive full-screen mode (hides status & navigation bars)
+ * @param {boolean} immersive
+ */
+export function setImmersiveMode(immersive) {
+  if (Platform.OS !== 'android' || !NotificationBarModule) return;
+  try {
+    if (typeof NotificationBarModule.setImmersiveMode === 'function') {
+      NotificationBarModule.setImmersiveMode(Boolean(immersive));
+    }
+  } catch (err) {
+    // Non-blocking
+  }
+}
+
 
